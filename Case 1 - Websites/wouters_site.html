@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Group Randomizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* DNA Helix Background Animation */
+        .dna-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .dna-strand {
+            position: absolute;
+            font-size: 24px;
+            animation: floatDNA 20s linear infinite;
+        }
+
+        @keyframes floatDNA {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #00d9ff;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7dd3fc;
+            font-size: 1.1rem;
+        }
+
+        /* Make Groups Button */
+        .btn-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+        }
+
+        .make-groups-btn {
+            background: linear-gradient(145deg, #00d9ff, #0099cc);
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1a1a2e;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .make-groups-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 50px rgba(0, 217, 255, 0.6);
+        }
+
+        .make-groups-btn:active {
+            transform: scale(0.95);
+        }
+
+        .make-groups-btn.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Reset Button */
+        .reset-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+            transition: all 0.3s ease;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .reset-btn.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .reset-btn:hover {
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        /* Quadrant Labels */
+        .quadrant-label {
+            position: fixed;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.2);
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .quadrant-label.visible {
+            opacity: 1;
+        }
+
+        .quadrant-label.q1 { top: 240px; right: 30px; }
+        .quadrant-label.q2 { top: 240px; left: 30px; }
+        .quadrant-label.q3 { bottom: 280px; left: 30px; }
+        .quadrant-label.q4 { bottom: 280px; right: 30px; }
+
+        /* Doctor Circles */
+        .doctor-circle {
+            position: fixed;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #2d3a5a, #1e2640);
+            border: 3px solid #00d9ff;
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.1);
+            cursor: pointer;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        left 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100;
+        }
+
+        .doctor-circle:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 50px rgba(0, 217, 255, 0.5), inset 0 0 30px rgba(0, 217, 255, 0.2);
+        }
+
+        .doctor-circle .emoji {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .doctor-circle .name {
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(5deg); }
+            50% { transform: translateY(0px) rotate(0deg); }
+            75% { transform: translateY(20px) rotate(-5deg); }
+        }
+
+        .doctor-circle.floating {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Different animation delays for each doctor */
+        .doctor-circle:nth-child(1) { animation-delay: 0s; }
+        .doctor-circle:nth-child(2) { animation-delay: 0.3s; }
+        .doctor-circle:nth-child(3) { animation-delay: 0.6s; }
+        .doctor-circle:nth-child(4) { animation-delay: 0.9s; }
+        .doctor-circle:nth-child(5) { animation-delay: 1.2s; }
+        .doctor-circle:nth-child(6) { animation-delay: 1.5s; }
+        .doctor-circle:nth-child(7) { animation-delay: 1.8s; }
+        .doctor-circle:nth-child(8) { animation-delay: 2.1s; }
+        .doctor-circle:nth-child(9) { animation-delay: 2.4s; }
+        .doctor-circle:nth-child(10) { animation-delay: 2.7s; }
+        .doctor-circle:nth-child(11) { animation-delay: 3s; }
+
+        /* Group colors */
+        .doctor-circle.group-1 {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+        }
+        .doctor-circle.group-2 {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.5);
+        }
+        .doctor-circle.group-3 {
+            border-color: #ffe66d;
+            box-shadow: 0 0 30px rgba(255, 230, 109, 0.5);
+        }
+        .doctor-circle.group-4 {
+            border-color: #a855f7;
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+        }
+
+        .quadrant-label.q1 { color: rgba(255, 107, 107, 0.6); }
+        .quadrant-label.q2 { color: rgba(78, 205, 196, 0.6); }
+        .quadrant-label.q3 { color: rgba(255, 230, 109, 0.6); }
+        .quadrant-label.q4 { color: rgba(168, 85, 247, 0.6); }
+
+        /* Confetti effect */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 300;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dna-container" id="dnaContainer"></div>
+
+    <div class="header">
+        <h1>Doctor Group Randomizer</h1>
+        <p>The ultimate medical team builder</p>
+    </div>
+
+    <div class="btn-container">
+        <button class="make-groups-btn" id="makeGroupsBtn">Make Groups</button>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">Reset & Shuffle Again</button>
+
+    <div class="quadrant-label q1">Team Alpha</div>
+    <div class="quadrant-label q2">Team Beta</div>
+    <div class="quadrant-label q3">Team Gamma</div>
+    <div class="quadrant-label q4">Team Delta</div>
+
+    <div id="doctorsContainer"></div>
+
+    <script>
+        // Doctor data with medical emojis
+        const doctors = [
+            { name: 'Judith', emoji: '👩‍⚕️' },
+            { name: 'Reinoud', emoji: '👨‍⚕️' },
+            { name: 'Britto', emoji: '🩺' },
+            { name: 'Kristel', emoji: '💉' },
+            { name: 'Martijn', emoji: '🔬' },
+            { name: 'Mustafa', emoji: '🧬' },
+            { name: 'Ruben', emoji: '💊' },
+            { name: 'Arko', emoji: '🏥' },
+            { name: 'Gilles', emoji: '🧪' },
+            { name: 'Jelmer', emoji: '🧠' },
+            { name: 'Peter', emoji: '🫀' }
+        ];
+
+        const container = document.getElementById('doctorsContainer');
+        const makeGroupsBtn = document.getElementById('makeGroupsBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const quadrantLabels = document.querySelectorAll('.quadrant-label');
+
+        // Create DNA background
+        function createDNABackground() {
+            const dnaContainer = document.getElementById('dnaContainer');
+            const dnaSymbols = ['🧬', '🔬', '💊', '🩺', '🏥', '💉'];
+
+            for (let i = 0; i < 15; i++) {
+                const dna = document.createElement('div');
+                dna.className = 'dna-strand';
+                dna.textContent = dnaSymbols[Math.floor(Math.random() * dnaSymbols.length)];
+                dna.style.left = Math.random() * 100 + '%';
+                dna.style.animationDelay = Math.random() * 20 + 's';
+                dna.style.animationDuration = (15 + Math.random() * 10) + 's';
+                dnaContainer.appendChild(dna);
+            }
+        }
+
+        // Store placed positions to avoid overlap
+        let placedPositions = [];
+        const circleSize = 120;
+
+        // Create doctor circles
+        function createDoctorCircles() {
+            container.innerHTML = '';
+            placedPositions = [];
+
+            doctors.forEach((doctor, index) => {
+                const circle = document.createElement('div');
+                circle.className = 'doctor-circle floating';
+                circle.innerHTML = `
+                    <span class="emoji">${doctor.emoji}</span>
+                    <span class="name">${doctor.name}</span>
+                `;
+
+                // Random initial position (avoiding center and other circles)
+                const pos = getRandomNonOverlappingPosition();
+                placedPositions.push(pos);
+                circle.style.left = pos.x + 'px';
+                circle.style.top = pos.y + 'px';
+
+                container.appendChild(circle);
+            });
+        }
+
+        function getRandomNonOverlappingPosition() {
+            const margin = 60;
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const exclusionRadius = 150;
+            const minDistance = circleSize + 20; // Minimum distance between circle centers
+
+            let x, y;
+            let attempts = 0;
+            const maxAttempts = 500;
+
+            do {
+                x = margin + Math.random() * (window.innerWidth - 2 * margin - circleSize);
+                y = margin + Math.random() * (window.innerHeight - 2 * margin - circleSize);
+                attempts++;
+
+                // Check if too close to center (where button is)
+                const tooCloseToCenter =
+                    Math.abs(x + circleSize/2 - centerX) < exclusionRadius &&
+                    Math.abs(y + circleSize/2 - centerY) < exclusionRadius;
+
+                // Check if overlapping with any placed circle
+                const overlapping = placedPositions.some(pos => {
+                    const dx = (x + circleSize/2) - (pos.x + circleSize/2);
+                    const dy = (y + circleSize/2) - (pos.y + circleSize/2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    return distance < minDistance;
+                });
+
+                if (!tooCloseToCenter && !overlapping) {
+                    break;
+                }
+            } while (attempts < maxAttempts);
+
+            return { x, y };
+        }
+
+        // Shuffle array
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Assign groups and move to quadrants
+        function makeGroups() {
+            const circles = document.querySelectorAll('.doctor-circle');
+            const shuffledIndices = shuffleArray([...Array(11).keys()]);
+
+            // Group sizes: 3, 3, 3, 2
+            const groups = [
+                shuffledIndices.slice(0, 3),   // Group 1: 3 people (top right)
+                shuffledIndices.slice(3, 6),   // Group 2: 3 people (top left)
+                shuffledIndices.slice(6, 9),   // Group 3: 3 people (bottom left)
+                shuffledIndices.slice(9, 11)   // Group 4: 2 people (bottom right)
+            ];
+
+            const spacing = 130; // Space between circles
+            const margin = 30;   // Distance from edge
+
+            groups.forEach((group, groupIndex) => {
+                group.forEach((doctorIndex, posIndex) => {
+                    const circle = circles[doctorIndex];
+                    circle.classList.remove('floating');
+                    circle.classList.add(`group-${groupIndex + 1}`);
+
+                    let x, y;
+                    const totalWidth = group.length * circleSize + (group.length - 1) * (spacing - circleSize);
+
+                    if (groupIndex === 0) {
+                        // Top right corner - align to right edge
+                        x = window.innerWidth - margin - circleSize - (group.length - 1 - posIndex) * spacing;
+                        y = margin + 80; // Below header
+                    } else if (groupIndex === 1) {
+                        // Top left corner - align to left edge
+                        x = margin + posIndex * spacing;
+                        y = margin + 80;
+                    } else if (groupIndex === 2) {
+                        // Bottom left corner - align to left edge
+                        x = margin + posIndex * spacing;
+                        y = window.innerHeight - margin - circleSize - 60; // Above reset button
+                    } else {
+                        // Bottom right corner - align to right edge
+                        x = window.innerWidth - margin - circleSize - (group.length - 1 - posIndex) * spacing;
+                        y = window.innerHeight - margin - circleSize - 60;
+                    }
+
+                    setTimeout(() => {
+                        circle.style.left = x + 'px';
+                        circle.style.top = y + 'px';
+                    }, doctorIndex * 50);
+                });
+            });
+
+            // Hide button and show reset
+            makeGroupsBtn.classList.add('hidden');
+            resetBtn.classList.add('visible');
+
+            // Show quadrant labels
+            quadrantLabels.forEach(label => label.classList.add('visible'));
+
+            // Confetti!
+            setTimeout(createConfetti, 800);
+        }
+
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a855f7', '#00d9ff'];
+            const emojis = ['🎉', '💊', '🩺', '⭐', '✨'];
+
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.fontSize = (15 + Math.random() * 20) + 'px';
+                    confetti.style.animation = `confettiFall ${2 + Math.random() * 2}s linear forwards`;
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 30);
+            }
+        }
+
+        // Reset function
+        function reset() {
+            placedPositions = [];
+            const circles = document.querySelectorAll('.doctor-circle');
+            circles.forEach(circle => {
+                circle.classList.remove('group-1', 'group-2', 'group-3', 'group-4');
+                circle.classList.add('floating');
+
+                const pos = getRandomNonOverlappingPosition();
+                placedPositions.push(pos);
+                circle.style.left = pos.x + 'px';
+                circle.style.top = pos.y + 'px';
+            });
+
+            makeGroupsBtn.classList.remove('hidden');
+            resetBtn.classList.remove('visible');
+            quadrantLabels.forEach(label => label.classList.remove('visible'));
+        }
+
+        // Event listeners
+        makeGroupsBtn.addEventListener('click', makeGroups);
+        resetBtn.addEventListener('click', reset);
+
+        // Initialize
+        createDNABackground();
+        createDoctorCircles();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (!resetBtn.classList.contains('visible')) {
+                createDoctorCircles();
+            }
+        });
+    </script>
+</body>
+</html>
