@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bootcamps Bakery</title>
+
+    <!-- Brython -->
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.12.2/brython.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3.12.2/brython_stdlib.js"></script>
+
+    <style>
+        body {
+            font-family: "Georgia", serif;
+            background: linear-gradient(#f6efe7, #efe2d0);
+            padding: 40px;
+            color: #4b2e1e;
+        }
+
+        .bakery {
+            background: #fffaf3;
+            max-width: 520px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .tagline {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 25px;
+            color: #7a4a2e;
+        }
+
+        h2 {
+            margin-top: 25px;
+            border-bottom: 1px dashed #c9b29b;
+            padding-bottom: 5px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #c9b29b;
+        }
+
+        .options label {
+            font-weight: normal;
+            margin-top: 6px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 12px;
+            background: #8b5e3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #73492e;
+        }
+
+        .receipt {
+            margin-top: 25px;
+            background: #fdf6ec;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #c9b29b;
+        }
+
+        .total {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body onload="brython()">
+
+<div class="bakery">
+    <h1>🥖 Bootcamps Bakery</h1>
+    <div class="tagline">Build your perfect lunch</div>
+
+    <h2>Bread</h2>
+    <label>Bread Type</label>
+    <select id="bread">
+        <option value="Sourdough">Sourdough ($3.50)</option>
+        <option value="Whole Wheat">Whole Wheat ($3.00)</option>
+        <option value="Baguette">Baguette ($2.50)</option>
+        <option value="Rye">Rye ($3.25)</option>
+    </select>
+
+    <label>Size</label>
+    <select id="size">
+        <option value="Small">Small (+$0)</option>
+        <option value="Medium">Medium (+$1.00)</option>
+        <option value="Large">Large (+$2.00)</option>
+    </select>
+
+    <h2>Custom Sandwich Builder</h2>
+
+    <label>Protein</label>
+    <select id="protein">
+        <option value="None">No protein ($0)</option>
+        <option value="Turkey">Turkey (+$2.50)</option>
+        <option value="Ham">Ham (+$2.00)</option>
+        <option value="Chicken">Chicken (+$3.00)</option>
+        <option value="Tofu">Tofu (+$2.00)</option>
+    </select>
+
+    <label>Vegetables</label>
+    <div class="options">
+        <label><input type="checkbox" id="lettuce"> Lettuce (+$0.30)</label>
+        <label><input type="checkbox" id="tomato"> Tomato (+$0.40)</label>
+        <label><input type="checkbox" id="onion"> Onion (+$0.25)</label>
+        <label><input type="checkbox" id="pickles"> Pickles (+$0.35)</label>
+    </div>
+
+    <label>Sauce</label>
+    <select id="sauce">
+        <option value="None">No sauce ($0)</option>
+        <option value="Mayo">Mayo (+$0.25)</option>
+        <option value="Mustard">Mustard (+$0.20)</option>
+        <option value="Pesto">Pesto (+$0.50)</option>
+    </select>
+
+    <button id="order_btn">Place Lunch Order</button>
+
+    <div id="receipt" class="receipt" style="display:none;"></div>
+</div>
+
+<script type="text/python">
+    from browser import document
+
+    bread_prices = {
+        "Sourdough": 3.50,
+        "Whole Wheat": 3.00,
+        "Baguette": 2.50,
+        "Rye": 3.25
+    }
+
+    size_prices = {
+        "Small": 0.00,
+        "Medium": 1.00,
+        "Large": 2.00
+    }
+
+    protein_prices = {
+        "None": 0.00,
+        "Turkey": 2.50,
+        "Ham": 2.00,
+        "Chicken": 3.00,
+        "Tofu": 2.00
+    }
+
+    veg_prices = {
+        "Lettuce": ("lettuce", 0.30),
+        "Tomato": ("tomato", 0.40),
+        "Onion": ("onion", 0.25),
+        "Pickles": ("pickles", 0.35)
+    }
+
+    sauce_prices = {
+        "None": 0.00,
+        "Mayo": 0.25,
+        "Mustard": 0.20,
+        "Pesto": 0.50
+    }
+
+    def place_order(event):
+        bread = document["bread"].value
+        size = document["size"].value
+        protein = document["protein"].value
+        sauce = document["sauce"].value
+
+        total = (
+            bread_prices[bread]
+            + size_prices[size]
+            + protein_prices[protein]
+            + sauce_prices[sauce]
+        )
+
+        veg_list = []
+        for name, (element_id, price) in veg_prices.items():
+            if document[element_id].checked:
+                veg_list.append(name)
+                total += price
+
+        receipt_html = f"""
+        <strong>Your Lunch Order</strong><br><br>
+        <u>Bread</u><br>
+        {size} {bread}<br><br>
+
+        <u>Sandwich</u><br>
+        Protein: {protein}<br>
+        Vegetables: {", ".join(veg_list) if veg_list else "None"}<br>
+        Sauce: {sauce}
+        <div class="total">Total: ${total:.2f}</div>
+        """
+
+        receipt = document["receipt"]
+        receipt.html = receipt_html
+        receipt.style.display = "block"
+
+    document["order_btn"].bind("click", place_order)
+</script>
+
+</body>
+</html>
