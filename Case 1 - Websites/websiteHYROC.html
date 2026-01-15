@@ -1,0 +1,911 @@
+from pathlib import Path
+from datetime import datetime
+
+HTML = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HYROC Study — Information for patients & researchers</title>
+  <meta name="description" content="HYROC: Hypofractionated definitive chemoradiotherapy for oesophageal cancer — multicenter phase II feasibility study." />
+  <meta name="theme-color" content="#0b1220" />
+
+  <style>
+    :root {{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.04);
+      --text: #eaf0ff;
+      --muted: rgba(234,240,255,0.72);
+      --border: rgba(255,255,255,0.14);
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+      --radius: 18px;
+      --max: 1100px;
+
+      --accent: #7c5cff;
+      --accent2: #22d3ee;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+    }}
+
+    * {{ box-sizing: border-box; }}
+    html, body {{ height: 100%; }}
+    body {{
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 15% 10%, rgba(124,92,255,0.34), transparent 60%),
+        radial-gradient(1000px 700px at 85% 10%, rgba(34,211,238,0.22), transparent 55%),
+        radial-gradient(900px 650px at 50% 90%, rgba(255,120,120,0.14), transparent 55%),
+        var(--bg);
+      line-height: 1.55;
+    }}
+
+    a {{ color: inherit; }}
+    .wrap {{ max-width: var(--max); margin: 0 auto; padding: 22px 16px 70px; }}
+
+    header {{
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.045);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }}
+
+    .topbar {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 12px;
+    }}
+
+    .brand {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }}
+
+    .logo {{
+      width: 34px; height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(124,92,255,0.95), rgba(34,211,238,0.75));
+      box-shadow: 0 0 0 6px rgba(124,92,255,0.15);
+      flex: 0 0 auto;
+    }}
+
+    .brand-title {{
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }}
+
+    .brand-title strong {{
+      font-size: 14px;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }}
+
+    .brand-title span {{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }}
+
+    nav {{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+    }}
+
+    .pill {{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: transform 0.08s ease, background 0.2s ease, color 0.2s ease;
+      user-select: none;
+    }}
+    .pill:hover {{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+    }}
+
+    .pill.primary {{
+      border-color: rgba(124,92,255,0.55);
+      background: linear-gradient(135deg, rgba(124,92,255,0.85), rgba(34,211,238,0.45));
+      color: #071027;
+      font-weight: 750;
+    }}
+
+    .content {{ margin-top: 18px; }}
+
+    .hero {{
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border-radius: calc(var(--radius) + 8px);
+      box-shadow: var(--shadow);
+      padding: 28px 18px;
+      display: grid;
+      gap: 14px;
+    }}
+
+    .hero h1 {{
+      margin: 0;
+      font-size: clamp(26px, 4.6vw, 44px);
+      line-height: 1.08;
+      letter-spacing: -0.5px;
+    }}
+
+    .hero p {{
+      margin: 0;
+      max-width: 78ch;
+      color: var(--muted);
+      font-size: 16px;
+    }}
+
+    .badge-row {{
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 4px;
+    }}
+
+    .badge {{
+      font-size: 12px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,0.03);
+      padding: 6px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }}
+
+    .dot {{
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.12);
+    }}
+
+    .grid {{
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }}
+
+    .card {{
+      grid-column: span 12;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: 0 14px 45px rgba(0,0,0,0.28);
+      padding: 16px;
+    }}
+
+    @media (min-width: 860px) {{
+      .card.span-7 {{ grid-column: span 7; }}
+      .card.span-5 {{ grid-column: span 5; }}
+      .card.span-6 {{ grid-column: span 6; }}
+    }}
+
+    .card h2 {{
+      margin: 0 0 10px;
+      font-size: 18px;
+      letter-spacing: -0.2px;
+    }}
+
+    .card h3 {{
+      margin: 14px 0 8px;
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: -0.1px;
+    }}
+
+    .muted {{ color: var(--muted); }}
+
+    .callout {{
+      border: 1px dashed rgba(255,255,255,0.22);
+      background: rgba(0,0,0,0.12);
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }}
+
+    .kpis {{
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }}
+    @media (max-width: 560px) {{
+      .kpis {{ grid-template-columns: 1fr; }}
+    }}
+    .kpi {{
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      border-radius: 14px;
+      padding: 12px;
+    }}
+    .kpi strong {{
+      display: block;
+      font-size: 18px;
+      letter-spacing: -0.2px;
+    }}
+    .kpi span {{
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }}
+
+    .btn-row {{
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 12px;
+    }}
+
+    button, .btn {{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }}
+    button:hover, .btn:hover {{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.08);
+    }}
+    .btn.primary {{
+      border-color: rgba(124,92,255,0.55);
+      background: linear-gradient(135deg, rgba(124,92,255,0.9), rgba(34,211,238,0.5));
+      color: #071027;
+    }}
+
+    .list {{
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }}
+
+    .li {{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+    }}
+
+    .li .tag {{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }}
+
+    .li .tag .mini {{
+      width: 8px; height: 8px; border-radius: 999px;
+      background: var(--accent2);
+      box-shadow: 0 0 0 4px rgba(34,211,238,0.10);
+    }}
+
+    details {{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      border-radius: 14px;
+      padding: 12px;
+    }}
+    summary {{
+      cursor: pointer;
+      font-weight: 750;
+      color: var(--text);
+    }}
+    details p {{
+      margin: 10px 0 0;
+      color: var(--muted);
+    }}
+
+    .footer {{
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 14px;
+    }}
+
+    .toast {{
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(10px);
+      color: white;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.4);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 180ms ease;
+      pointer-events: none;
+      max-width: min(760px, calc(100vw - 28px));
+      text-align: center;
+      white-space: pre-wrap;
+    }}
+
+    code.inline {{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.95em;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.18);
+      color: rgba(234,240,255,0.92);
+    }}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div class="brand-title">
+            <strong>HYROC Study</strong>
+            <span id="subtitle" data-i18n="subtitle">Information for patients & researchers</span>
+          </div>
+        </div>
+
+        <nav aria-label="Main navigation">
+          <a class="pill" href="#patients" data-i18n="nav_patients">Patients</a>
+          <a class="pill" href="#researchers" data-i18n="nav_researchers">Researchers</a>
+          <a class="pill" href="#faq" data-i18n="nav_faq">FAQ</a>
+          <a class="pill" href="#contact" data-i18n="nav_contact">Contact</a>
+          <button class="pill primary" id="langBtn" type="button" aria-label="Switch language">
+            <span aria-hidden="true">🌐</span>
+            <span id="langLabel">EN</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="hero" id="top">
+        <h1 data-i18n="hero_title">HYROC: Hypofractionated definitive chemoradiotherapy for oesophageal cancer</h1>
+        <p data-i18n="hero_body">
+          HYROC is a multicenter phase II feasibility study in the Netherlands evaluating a shortened, hypofractionated
+          definitive chemoradiotherapy schedule for locally advanced oesophageal or gastro-oesophageal junction cancer
+          in patients who are unfit for—or refrain from—surgery.
+        </p>
+
+        <div class="badge-row">
+          <span class="badge"><span class="dot" aria-hidden="true"></span><span data-i18n="badge_status">Phase II feasibility • single-arm • multicenter</span></span>
+          <span class="badge" id="buildStamp"></span>
+          <span class="badge" data-i18n="badge_note">Not for emergencies. If you feel unwell, contact your clinician.</span>
+        </div>
+
+        <div class="kpis" aria-label="Study snapshot">
+          <div class="kpi">
+            <strong data-i18n="kpi_goal_val">Goal: feasibility</strong>
+            <span data-i18n="kpi_goal_lbl">Deliver 20×2.4 Gy in 4 weeks while maintaining 6 chemo cycles</span>
+          </div>
+          <div class="kpi">
+            <strong data-i18n="kpi_pop_val">Population: n=60</strong>
+            <span data-i18n="kpi_pop_lbl">Locally advanced oesophagus/GOJ cancer, unfit for or declining surgery</span>
+          </div>
+          <div class="kpi">
+            <strong data-i18n="kpi_sites_val">Setting: 7 centers</strong>
+            <span data-i18n="kpi_sites_lbl">5 multidisciplinary teams in the Netherlands</span>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn primary" id="downloadBtn" type="button" data-i18n="btn_download">Download summary (TXT)</button>
+          <a class="btn" href="#contact" data-i18n="btn_interest">I’m interested / questions</a>
+          <button class="btn" id="copyEmailBtn" type="button" data-i18n="btn_copy_email">Copy email address</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <!-- PATIENTS -->
+        <article class="card span-7" id="patients">
+          <h2 data-i18n="patients_title">For patients / participants</h2>
+          <p class="muted" data-i18n="patients_intro">
+            This section explains HYROC in plain language. It’s general information and does not replace a conversation with your care team.
+          </p>
+
+          <h3 data-i18n="patients_why_title">Why this study?</h3>
+          <p class="muted" data-i18n="patients_why_body">
+            For some people with oesophageal cancer, surgery is not possible or they decide not to have surgery.
+            A common alternative is definitive chemoradiotherapy (radiotherapy combined with chemotherapy).
+            HYROC studies whether a shorter radiotherapy schedule may be feasible and better tolerated, while still giving the full course of chemotherapy.
+          </p>
+
+          <div class="callout" data-i18n="patients_rationale_note">
+            Research suggests that radiotherapy can reduce certain white blood cells (lymphocytes). Very low levels (called “radiation-induced lymphopenia”)
+            may be linked to worse outcomes. Using fewer radiotherapy sessions may reduce this effect. HYROC will also track severe lymphopenia using standard criteria (CTCAE v5.0).
+          </div>
+
+          <h3 data-i18n="patients_what_title">What does participation involve?</h3>
+          <ul class="list">
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span data-i18n="p_visits_tag">Radiotherapy</span></div>
+              <div class="muted" data-i18n="p_visits_body">
+                External beam radiotherapy: <strong>20 sessions</strong>, <strong>2.4 Gy</strong> per session, <strong>5 days/week</strong> over <strong>4 weeks</strong>
+                (total <strong>48 Gy</strong>) to the primary tumor and involved lymph nodes.
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span data-i18n="p_chemo_tag">Chemotherapy</span></div>
+              <div class="muted" data-i18n="p_chemo_body">
+                Concurrent chemotherapy during radiotherapy: <strong>6 cycles in 4 weeks</strong> using carboplatin (AUC 2) + paclitaxel (50 mg/m²).
+                After the first 10 patients, tolerability is reviewed; if needed, chemotherapy may switch to weekly administration (radiotherapy remains 4 weeks).
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span data-i18n="p_burden_tag">Burden & risks</span></div>
+              <div class="muted" data-i18n="p_burden_body">
+                Possible side effects are similar to standard chemoradiotherapy, such as oesophagitis (pain/swallowing problems),
+                myelosuppression (low blood counts), and fatigue. There may be a risk of more severe side effects, although the shorter course may reduce how long acute side effects last.
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span data-i18n="p_rights_tag">Your rights</span></div>
+              <div class="muted" data-i18n="p_rights_body">
+                Participation is voluntary. You can stop at any time. Your data are handled according to applicable regulations. Ask the team for the official participant information and consent documents.
+              </div>
+            </li>
+          </ul>
+
+          <h3 data-i18n="patients_who_title">Who can take part? (high-level)</h3>
+          <p class="muted" data-i18n="patients_who_body">
+            Adults with locally advanced oesophageal or gastro-oesophageal junction cancer who are eligible for curative-intent definitive chemoradiotherapy,
+            and who are unfit for—or choose not to have—surgery. The study team will check detailed criteria and staging.
+          </p>
+        </article>
+
+        <!-- RESEARCHERS -->
+        <aside class="card span-5" id="researchers">
+          <h2 data-i18n="researchers_title">For researchers</h2>
+          <p class="muted" data-i18n="researchers_intro">
+            Key protocol elements from the HYROC summary.
+          </p>
+
+          <ul class="list">
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span>Design</span></div>
+              <div class="muted">
+                Prospective, single-arm, phase II feasibility study; 5 MDTs across 7 Dutch centers.
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span>Population</span></div>
+              <div class="muted">
+                n=60. cT1N1-3M0 or cT2-4aN0-3M0 adenocarcinoma, SCC, or adenosquamous carcinoma of oesophagus or GOJ
+                (Siewert I–II), unfit for or refraining from surgery; eligible for curative-intent definitive CRT.
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span>Intervention</span></div>
+              <div class="muted">
+                RT: 20 × 2.4 Gy (5/wk) → 48 Gy to primary + involved nodes, with concurrent carbo (AUC 2) + paclitaxel (50 mg/m²).
+                6 cycles within 4 weeks. Interim tolerability after first 10; if not feasible, chemo switches to weekly while RT remains 4 weeks.
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span>Primary endpoint</span></div>
+              <div class="muted">
+                Feasibility: ≥50% complete all 20 RT fractions and all 6 planned chemo cycles (benchmark: real-world completion of conventional regimen).
+              </div>
+            </li>
+            <li class="li">
+              <div class="tag"><span class="mini" aria-hidden="true"></span><span>Secondary / exploratory</span></div>
+              <div class="muted">
+                Key secondary compliance: ≥19/20 RT fractions and ≥5/6 chemo cycles.
+                Acute toxicity grade ≥3; grade ≥4 RIL (CTCAE v5.0).
+                Exploratory: PFS, OS, QoL, healthcare costs; PS-matched comparisons with NKR (OS), POCOP (QoL), UMCG prospective toxicity data; translational tissue/blood analyses for biobank participants.
+              </div>
+            </li>
+          </ul>
+
+          <div class="btn-row">
+            <button class="btn" id="expandAllBtn" type="button" data-i18n="btn_expand">Expand FAQ</button>
+            <a class="btn" href="#faq" data-i18n="btn_go_faq">Go to FAQ</a>
+          </div>
+
+          <div class="callout">
+            Tip: add your official registration IDs here (EU CTR / ClinicalTrials.gov / METC), plus a link to the full protocol/PIS/ICF if public.
+          </div>
+        </aside>
+
+        <!-- FAQ -->
+        <section class="card span-6" id="faq">
+          <h2 data-i18n="faq_title">FAQ</h2>
+
+          <details>
+            <summary data-i18n="faq_q1">Is this different from standard treatment?</summary>
+            <p data-i18n="faq_a1">
+              The medicines and treatment types are standard (radiotherapy + chemotherapy), but the radiotherapy schedule is shorter (4 weeks) and chemotherapy is planned as 6 cycles within that period (with an early tolerability check).
+            </p>
+          </details>
+
+          <details>
+            <summary data-i18n="faq_q2">What is radiation-induced lymphopenia (RIL)?</summary>
+            <p data-i18n="faq_a2">
+              Lymphopenia means low lymphocyte counts (a type of white blood cell). HYROC examines whether fewer radiotherapy sessions may reduce severe lymphopenia and support tolerability.
+            </p>
+          </details>
+
+          <details>
+            <summary data-i18n="faq_q3">What side effects can occur?</summary>
+            <p data-i18n="faq_a3">
+              Side effects may include swallowing pain (oesophagitis), fatigue, nausea, and low blood counts (myelosuppression). The study tracks severe acute toxicity (grade ≥3) and severe lymphopenia (grade ≥4) using CTCAE v5.0.
+            </p>
+          </details>
+
+          <details>
+            <summary data-i18n="faq_q4">How is feasibility defined?</summary>
+            <p data-i18n="faq_a4">
+              The main feasibility endpoint is whether at least 50% of patients complete all 20 radiotherapy fractions and all 6 planned chemotherapy cycles.
+            </p>
+          </details>
+
+          <details>
+            <summary data-i18n="faq_q5">Who do I contact?</summary>
+            <p data-i18n="faq_a5">
+              Use the contact section below. Replace the placeholder email/phone with your study mailbox and site contact details.
+            </p>
+          </details>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="card span-6" id="contact">
+          <h2 data-i18n="contact_title">Contact</h2>
+          <p class="muted" data-i18n="contact_intro">
+            Questions or interested in participating? Contact the HYROC study team at your treating center.
+          </p>
+
+          <div class="li" style="margin-top: 10px;">
+            <div class="tag"><span class="mini" aria-hidden="true"></span><span data-i18n="contact_team_tag">Study team</span></div>
+            <div class="muted">
+              <div><strong data-i18n="contact_site">Site:</strong> <span id="siteLine">[add hospital / coordinating center]</span></div>
+              <div style="margin-top: 6px;"><strong>E-mail:</strong> <span id="emailText">hyroc-study@example.org</span></div>
+              <div style="margin-top: 6px;"><strong data-i18n="contact_phone">Phone:</strong> <span id="phoneText">[add phone]</span></div>
+              <div style="margin-top: 6px;"><strong data-i18n="contact_reg">Registration IDs:</strong> <span id="regText">[EU CTR / ClinicalTrials.gov / METC]</span></div>
+            </div>
+          </div>
+
+          <div class="callout" data-i18n="contact_note">
+            <strong>Note:</strong> This website is informational. For urgent symptoms, contact your local emergency services.
+          </div>
+
+          <div class="btn-row">
+            <button class="btn primary" id="mailtoBtn" type="button" data-i18n="btn_email">Send email</button>
+            <button class="btn" id="copyLinkBtn" type="button" data-i18n="btn_copy_link">Copy page link</button>
+          </div>
+        </section>
+      </section>
+
+      <div class="footer">
+        <span id="year"></span> • <span data-i18n="footer_text">HYROC Study — single-file information page</span>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ---------- Toast ----------
+    function showToast(msg) {{
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.opacity = '0';
+      requestAnimationFrame(() => {{ t.style.opacity = '1'; }});
+      setTimeout(() => {{ t.style.opacity = '0'; }}, 1700);
+    }}
+
+    // ---------- i18n (EN/NL) ----------
+    const STRINGS = {{
+      en: {{
+        subtitle: "Information for patients & researchers",
+        nav_patients: "Patients",
+        nav_researchers: "Researchers",
+        nav_faq: "FAQ",
+        nav_contact: "Contact",
+
+        hero_title: "HYROC: Hypofractionated definitive chemoradiotherapy for oesophageal cancer",
+        hero_body: "HYROC is a multicenter phase II feasibility study in the Netherlands evaluating a shortened, hypofractionated definitive chemoradiotherapy schedule for locally advanced oesophageal or gastro-oesophageal junction cancer in patients who are unfit for—or refrain from—surgery.",
+        badge_status: "Phase II feasibility • single-arm • multicenter",
+        badge_note: "Not for emergencies. If you feel unwell, contact your clinician.",
+
+        kpi_goal_val: "Goal: feasibility",
+        kpi_goal_lbl: "Deliver 20×2.4 Gy in 4 weeks while maintaining 6 chemo cycles",
+        kpi_pop_val: "Population: n=60",
+        kpi_pop_lbl: "Locally advanced oesophagus/GOJ cancer, unfit for or declining surgery",
+        kpi_sites_val: "Setting: 7 centers",
+        kpi_sites_lbl: "5 multidisciplinary teams in the Netherlands",
+
+        btn_download: "Download summary (TXT)",
+        btn_interest: "I’m interested / questions",
+        btn_copy_email: "Copy email address",
+
+        patients_title: "For patients / participants",
+        patients_intro: "This section explains HYROC in plain language. It’s general information and does not replace a conversation with your care team.",
+        patients_why_title: "Why this study?",
+        patients_why_body: "For some people with oesophageal cancer, surgery is not possible or they decide not to have surgery. A common alternative is definitive chemoradiotherapy (radiotherapy combined with chemotherapy). HYROC studies whether a shorter radiotherapy schedule may be feasible and better tolerated, while still giving the full course of chemotherapy.",
+        patients_rationale_note: "Research suggests that radiotherapy can reduce certain white blood cells (lymphocytes). Very low levels (called “radiation-induced lymphopenia”) may be linked to worse outcomes. Using fewer radiotherapy sessions may reduce this effect. HYROC will also track severe lymphopenia using standard criteria (CTCAE v5.0).",
+        patients_what_title: "What does participation involve?",
+        p_visits_tag: "Radiotherapy",
+        p_visits_body: "External beam radiotherapy: 20 sessions, 2.4 Gy per session, 5 days/week over 4 weeks (total 48 Gy) to the primary tumor and involved lymph nodes.",
+        p_chemo_tag: "Chemotherapy",
+        p_chemo_body: "Concurrent chemotherapy during radiotherapy: 6 cycles in 4 weeks using carboplatin (AUC 2) + paclitaxel (50 mg/m²). After the first 10 patients, tolerability is reviewed; if needed, chemotherapy may switch to weekly administration (radiotherapy remains 4 weeks).",
+        p_burden_tag: "Burden & risks",
+        p_burden_body: "Possible side effects are similar to standard chemoradiotherapy, such as oesophagitis (pain/swallowing problems), myelosuppression (low blood counts), and fatigue. There may be a risk of more severe side effects, although the shorter course may reduce how long acute side effects last.",
+        p_rights_tag: "Your rights",
+        p_rights_body: "Participation is voluntary. You can stop at any time. Your data are handled according to applicable regulations. Ask the team for the official participant information and consent documents.",
+        patients_who_title: "Who can take part? (high-level)",
+        patients_who_body: "Adults with locally advanced oesophageal or gastro-oesophageal junction cancer who are eligible for curative-intent definitive chemoradiotherapy, and who are unfit for—or choose not to have—surgery. The study team will check detailed criteria and staging.",
+
+        researchers_title: "For researchers",
+        researchers_intro: "Key protocol elements from the HYROC summary.",
+
+        btn_expand: "Expand FAQ",
+        btn_go_faq: "Go to FAQ",
+
+        faq_title: "FAQ",
+        faq_q1: "Is this different from standard treatment?",
+        faq_a1: "The medicines and treatment types are standard (radiotherapy + chemotherapy), but the radiotherapy schedule is shorter (4 weeks) and chemotherapy is planned as 6 cycles within that period (with an early tolerability check).",
+        faq_q2: "What is radiation-induced lymphopenia (RIL)?",
+        faq_a2: "Lymphopenia means low lymphocyte counts (a type of white blood cell). HYROC examines whether fewer radiotherapy sessions may reduce severe lymphopenia and support tolerability.",
+        faq_q3: "What side effects can occur?",
+        faq_a3: "Side effects may include swallowing pain (oesophagitis), fatigue, nausea, and low blood counts (myelosuppression). The study tracks severe acute toxicity (grade ≥3) and severe lymphopenia (grade ≥4) using CTCAE v5.0.",
+        faq_q4: "How is feasibility defined?",
+        faq_a4: "The main feasibility endpoint is whether at least 50% of patients complete all 20 radiotherapy fractions and all 6 planned chemotherapy cycles.",
+        faq_q5: "Who do I contact?",
+        faq_a5: "Use the contact section below. Replace the placeholder email/phone with your study mailbox and site contact details.",
+
+        contact_title: "Contact",
+        contact_intro: "Questions or interested in participating? Contact the HYROC study team at your treating center.",
+        contact_team_tag: "Study team",
+        contact_site: "Site:",
+        contact_phone: "Phone:",
+        contact_reg: "Registration IDs:",
+        contact_note: "<strong>Note:</strong> This website is informational. For urgent symptoms, contact your local emergency services.",
+        btn_email: "Send email",
+        btn_copy_link: "Copy page link",
+
+        footer_text: "HYROC Study — single-file information page"
+      }},
+      nl: {{
+        subtitle: "Informatie voor patiënten & onderzoekers",
+        nav_patients: "Patiënten",
+        nav_researchers: "Onderzoekers",
+        nav_faq: "FAQ",
+        nav_contact: "Contact",
+
+        hero_title: "HYROC: gehypofractioneerde definitieve chemoradiotherapie bij slokdarmkanker",
+        hero_body: "HYROC is een multicenter fase II haalbaarheidsstudie in Nederland. De studie onderzoekt een verkort (gehypofractioneerd) schema van definitieve chemoradiotherapie bij lokaal gevorderde slokdarm- of gastro-oesofageale overgangstumoren bij patiënten die ongeschikt zijn voor—of afzien van—chirurgie.",
+        badge_status: "Fase II haalbaarheid • single-arm • multicenter",
+        badge_note: "Niet voor spoed. Bij klachten: neem contact op met uw behandelaar.",
+
+        kpi_goal_val: "Doel: haalbaarheid",
+        kpi_goal_lbl: "20×2,4 Gy in 4 weken met behoud van 6 chemo-cycli",
+        kpi_pop_val: "Populatie: n=60",
+        kpi_pop_lbl: "Lokaal gevorderd oesofagus/GOJ, ongeschikt voor of afzien van chirurgie",
+        kpi_sites_val: "Setting: 7 centra",
+        kpi_sites_lbl: "5 multidisciplinaire teams in Nederland",
+
+        btn_download: "Samenvatting downloaden (TXT)",
+        btn_interest: "Ik heb interesse / vragen",
+        btn_copy_email: "Kopieer e-mailadres",
+
+        patients_title: "Voor patiënten / deelnemers",
+        patients_intro: "Dit deel legt HYROC uit in begrijpelijke taal. Het is algemene informatie en vervangt geen gesprek met uw behandelteam.",
+        patients_why_title: "Waarom deze studie?",
+        patients_why_body: "Bij sommige mensen met slokdarmkanker is een operatie niet mogelijk, of kiezen zij ervoor geen operatie te ondergaan. Een veelgebruikte behandeling met genezend doel is dan definitieve chemoradiotherapie (bestraling gecombineerd met chemotherapie). HYROC onderzoekt of een korter bestralingsschema haalbaar kan zijn en beter te verdragen is, terwijl tegelijk een volledige kuur chemotherapie wordt gegeven.",
+        patients_rationale_note: "Onderzoek laat zien dat bestraling bepaalde witte bloedcellen (lymfocyten) kan verlagen. Zeer lage waarden (\"radiation-induced lymphopenia\") worden in verband gebracht met slechtere uitkomsten. Minder bestralingssessies zouden dit mogelijk kunnen verminderen. HYROC registreert ook ernstige lymfopenie volgens standaardcriteria (CTCAE v5.0).",
+        patients_what_title: "Wat houdt deelname in?",
+        p_visits_tag: "Bestraling",
+        p_visits_body: "Uitwendige bestraling: 20 sessies, 2,4 Gy per sessie, 5 dagen per week gedurende 4 weken (totaal 48 Gy) op de primaire tumor en aangedane lymfeklieren.",
+        p_chemo_tag: "Chemotherapie",
+        p_chemo_body: "Gelijktijdige chemotherapie tijdens de bestraling: 6 cycli in 4 weken met carboplatine (AUC 2) + paclitaxel (50 mg/m²). Na de eerste 10 patiënten wordt de verdraagbaarheid beoordeeld; zo nodig kan de chemotherapie wekelijks worden gegeven (de bestraling blijft 4 weken).",
+        p_burden_tag: "Belasting & risico’s",
+        p_burden_body: "Mogelijke bijwerkingen lijken op die van standaard chemoradiotherapie, zoals slokdarmontsteking/keelpijn bij slikken (oesofagitis), onderdrukking van het beenmerg (lage bloedwaarden) en vermoeidheid. Er kan een kans zijn op ernstigere bijwerkingen, maar de kortere behandelduur kan de duur van acute klachten mogelijk beperken.",
+        p_rights_tag: "Uw rechten",
+        p_rights_body: "Deelname is vrijwillig. U kunt altijd stoppen. Gegevens worden verwerkt volgens geldende regels. Vraag het team naar de officiële patiënteninformatie en toestemmingsformulieren.",
+        patients_who_title: "Wie kan meedoen? (globaal)",
+        patients_who_body: "Volwassenen met lokaal gevorderde slokdarm- of gastro-oesofageale overgangskanker die in aanmerking komen voor definitieve chemoradiotherapie met genezend doel, en die ongeschikt zijn voor—of afzien van—chirurgie. Het onderzoeksteam beoordeelt de exacte criteria en stadiëring.",
+
+        researchers_title: "Voor onderzoekers",
+        researchers_intro: "Belangrijkste protocolpunten uit de HYROC-samenvatting.",
+
+        btn_expand: "FAQ uitklappen",
+        btn_go_faq: "Ga naar FAQ",
+
+        faq_title: "FAQ",
+        faq_q1: "Is dit anders dan standaardbehandeling?",
+        faq_a1: "De behandelvormen en middelen zijn standaard (bestraling + chemotherapie), maar het bestralingsschema is korter (4 weken) en de chemotherapie is gepland als 6 cycli binnen die periode (met een vroege evaluatie van verdraagbaarheid).",
+        faq_q2: "Wat is radiation-induced lymphopenia (RIL)?",
+        faq_a2: "Lymfopenie betekent een laag aantal lymfocyten (een type witte bloedcel). HYROC onderzoekt of minder bestralingssessies ernstige lymfopenie kunnen verminderen en de verdraagbaarheid kunnen ondersteunen.",
+        faq_q3: "Welke bijwerkingen kunnen optreden?",
+        faq_a3: "Bijwerkingen kunnen o.a. slikpijn (oesofagitis), vermoeidheid, misselijkheid en lage bloedwaarden (myelosuppressie) omvatten. De studie volgt ernstige acute toxiciteit (graad ≥3) en ernstige lymfopenie (graad ≥4) volgens CTCAE v5.0.",
+        faq_q4: "Hoe wordt haalbaarheid gedefinieerd?",
+        faq_a4: "De primaire haalbaarheidsuitkomst is of minimaal 50% van de patiënten alle 20 bestralingsfracties én alle 6 geplande chemokuren voltooit.",
+        faq_q5: "Met wie kan ik contact opnemen?",
+        faq_a5: "Zie het contactblok hieronder. Vervang het placeholder e-mailadres/telefoonnummer door de juiste studiecontacten.",
+
+        contact_title: "Contact",
+        contact_intro: "Vragen of interesse in deelname? Neem contact op met het HYROC-team in uw behandelcentrum.",
+        contact_team_tag: "Onderzoeksteam",
+        contact_site: "Locatie:",
+        contact_phone: "Telefoon:",
+        contact_reg: "Registraties:",
+        contact_note: "<strong>Let op:</strong> Deze website is informatief. Bij spoed: neem contact op met spoedzorg/112.",
+        btn_email: "Stuur e-mail",
+        btn_copy_link: "Kopieer paginalink",
+
+        footer_text: "HYROC-studie — single-file informatiepagina"
+      }}
+    }};
+
+    let lang = "en";
+    const langBtn = document.getElementById('langBtn');
+    const langLabel = document.getElementById('langLabel');
+
+    function applyI18n() {{
+      const dict = STRINGS[lang];
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => {{
+        const key = el.getAttribute("data-i18n");
+        const val = dict[key];
+        if (typeof val === "string") {{
+          if (val.includes("<")) el.innerHTML = val;
+          else el.textContent = val;
+        }}
+      }});
+      document.title = (lang === "nl")
+        ? "HYROC studie — Informatie voor patiënten & onderzoekers"
+        : "HYROC Study — Information for patients & researchers";
+      langLabel.textContent = lang.toUpperCase();
+      showToast(lang === "nl" ? "Taal: Nederlands" : "Language: English");
+    }}
+
+    langBtn.addEventListener("click", () => {{
+      lang = (lang === "en") ? "nl" : "en";
+      applyI18n();
+    }});
+
+    // ---------- Clipboard & mail ----------
+    function getEmail() {{
+      return document.getElementById("emailText").textContent.trim();
+    }}
+
+    document.getElementById("copyEmailBtn").addEventListener("click", async () => {{
+      try {{
+        await navigator.clipboard.writeText(getEmail());
+        showToast(lang === "nl" ? "E-mailadres gekopieerd" : "Email copied");
+      }} catch {{
+        showToast(lang === "nl" ? "Kopiëren mislukt (browserblok)" : "Copy failed (browser blocked)");
+      }}
+    }});
+
+    document.getElementById("mailtoBtn").addEventListener("click", () => {{
+      const subject = encodeURIComponent(lang === "nl" ? "Vraag over HYROC-studie" : "Question about the HYROC Study");
+      const body = encodeURIComponent(lang === "nl"
+        ? "Hallo HYROC-team,\\n\\nIk heb een vraag over de HYROC-studie:\\n\\n[uw vraag]\\n\\nMet vriendelijke groet,"
+        : "Hello HYROC team,\\n\\nI have a question about the HYROC study:\\n\\n[your question]\\n\\nKind regards,"
+      );
+      window.location.href = `mailto:${{getEmail()}}?subject=${{subject}}&body=${{body}}`;
+    }});
+
+    document.getElementById("copyLinkBtn").addEventListener("click", async () => {{
+      try {{
+        const url = window.location.href.split("#")[0];
+        await navigator.clipboard.writeText(url);
+        showToast(lang === "nl" ? "Link gekopieerd" : "Link copied");
+      }} catch {{
+        showToast(lang === "nl" ? "Kopiëren mislukt" : "Copy failed");
+      }}
+    }});
+
+    document.getElementById("expandAllBtn").addEventListener("click", () => {{
+      document.querySelectorAll("#faq details").forEach(d => d.open = true);
+      showToast(lang === "nl" ? "FAQ uitgeklapt" : "FAQ expanded");
+    }});
+
+    // ---------- Download summary (TXT) ----------
+    function textSummary() {{
+      const lines = [];
+      const title = (lang === "nl") ? "HYROC-studie — Samenvatting" : "HYROC Study — Summary";
+      lines.push(title);
+      lines.push("=".repeat(title.length));
+      lines.push("");
+
+      lines.push((lang === "nl") ? "Kernpunten" : "Key points");
+      lines.push("- Design: Prospective, single-arm, phase II feasibility; 7 Dutch centers (5 MDTs).");
+      lines.push("- Populatie: n=60; cT1N1-3M0 of cT2-4aN0-3M0; ADC/SCC/adenosquamous; oesofagus/GOJ (Siewert I–II); ongeschikt voor of afzien van chirurgie.");
+      lines.push("- RT: 20×2.4 Gy (5/wk) = 48 Gy (primary + involved nodes) in 4 weeks.");
+      lines.push("- Chemo: concurrent carbo (AUC 2) + paclitaxel (50 mg/m²); 6 cycles within 4 weeks; interim tolerability after first 10; if not feasible switch to weekly chemo (RT unchanged).");
+      lines.push("- Primary endpoint: feasibility ≥50% complete all 20 RT fractions + all 6 chemo cycles.");
+      lines.push("- Secondary: compliance ≥19/20 RT + ≥5/6 chemo; grade ≥3 acute toxicity; grade ≥4 RIL (CTCAE v5.0).");
+      lines.push("- Exploratory: PFS, OS, QoL, costs; PS-matched comparisons (NKR, POCOP, UMCG); translational tissue/blood for biobank participants.");
+      lines.push("");
+
+      lines.push((lang === "nl") ? "Contact" : "Contact");
+      lines.push("- Site: " + document.getElementById("siteLine").textContent.trim());
+      lines.push("- Email: " + getEmail());
+      lines.push("- " + (lang === "nl" ? "Telefoon: " : "Phone: ") + document.getElementById("phoneText").textContent.trim());
+      lines.push("- " + (lang === "nl" ? "Registraties: " : "Registration IDs: ") + document.getElementById("regText").textContent.trim());
+      return lines.join("\\n");
+    }}
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {{
+      const blob = new Blob([textSummary()], {{ type: "text/plain;charset=utf-8" }});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = (lang === "nl") ? "HYROC-samenvatting.txt" : "HYROC-summary.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      showToast(lang === "nl" ? "Download gestart" : "Download started");
+    }});
+
+    // ---------- Footer / build stamp ----------
+    document.getElementById("year").textContent = new Date().getFullYear();
+    document.getElementById("buildStamp").textContent =
+      (lang === "nl" ? "Gegenereerd: " : "Generated: ") + "{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}";
+
+    // Initial render
+    applyI18n();
+  </script>
+</body>
+</html>
+"""
+
+def main() -> None:
+    out = Path("hyroc-studie.html")
+    out.write_text(HTML, encoding="utf-8")
+    print(f"Wrote {out.resolve()}")
+
+if __name__ == "__main__":
+    main()
