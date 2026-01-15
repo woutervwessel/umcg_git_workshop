@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🍦 IJsverkoop voor DETECT — Teller</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#121b2e;
+      --text:#eaf0ff;
+      --muted:#a9b7dd;
+      --accent:#6ee7ff;
+      --accent2:#a78bfa;
+      --danger:#ff6b6b;
+      --ok:#7CFFB2;
+      --line:rgba(255,255,255,.10);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1000px 600px at 20% 10%, rgba(110,231,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 80% 0%, rgba(167,139,250,.18), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .wrap{
+      width:min(1040px, 100%);
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:18px;
+    }
+    @media (max-width: 900px){ .wrap{grid-template-columns:1fr} }
+    .card{
+      background: rgba(18,27,46,.92);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    header{
+      padding:22px;
+      border-bottom:1px solid var(--line);
+      background: linear-gradient(90deg, rgba(110,231,255,.10), rgba(167,139,250,.10));
+    }
+    header h1{
+      margin:0 0 8px;
+      font-size: clamp(22px, 2.4vw, 32px);
+    }
+    header p{margin:0; color:var(--muted); line-height:1.5}
+    .content{padding:18px 22px 22px}
+    .big{padding:18px 22px 22px}
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:13px;
+      margin-top:12px;
+    }
+    .total{
+      font-size: clamp(34px, 4.3vw, 56px);
+      margin:10px 0 0;
+      letter-spacing:.3px;
+      font-variant-numeric: tabular-nums;
+    }
+    .sub{color:var(--muted); margin:6px 0 0; line-height:1.5}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top:14px;
+    }
+    @media (max-width:560px){ .grid{grid-template-columns:1fr} }
+    label{
+      display:block;
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      outline:none;
+    }
+    input:focus{
+      border-color: rgba(110,231,255,.55);
+      box-shadow: 0 0 0 3px rgba(110,231,255,.18);
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    button{
+      cursor:pointer;
+      border:0;
+      border-radius:12px;
+      padding:12px 14px;
+      font-weight:700;
+      color:#07111f;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      box-shadow: 0 8px 18px rgba(110,231,255,.12);
+    }
+    button.secondary{
+      background: rgba(255,255,255,.08);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:none;
+      font-weight:600;
+    }
+    button.danger{
+      background: rgba(255,107,107,.15);
+      color: var(--danger);
+      border:1px solid rgba(255,107,107,.30);
+      box-shadow:none;
+    }
+    .note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .meter{
+      margin-top:16px;
+      padding:14px;
+      border-radius:16px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .meter .line{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .meter .bar{
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .meter .bar > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--ok), var(--accent));
+      border-radius:999px;
+      transition: width .35s ease;
+    }
+    .toast{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(124,255,178,.25);
+      background: rgba(124,255,178,.10);
+      color:#bfffe0;
+      display:none;
+      font-size:13px;
+    }
+    .qrbox{
+      margin-top:14px;
+      padding:14px;
+      border-radius:16px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .qrbox img{
+      width:200px;
+      height:200px;
+      border-radius:12px;
+      background:#fff;
+      display:block;
+      margin-top:10px;
+    }
+    .footer{
+      padding:14px 22px;
+      border-top:1px solid var(--line);
+      color:var(--muted);
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .tiny{font-size:12px;color:var(--muted)}
+    .divider{height:1px;background:var(--line);margin:14px 0}
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <!-- LINKS: uitleg + knoppen -->
+    <section class="card">
+      <header>
+        <h1>🍦 IJsverkoop voor DETECT</h1>
+        <p>
+          Koop een ijsje en steun onderzoek naar <strong>snelle hulp bij een hartstilstand</strong>.
+          <br/>De opbrengst gaat naar de <strong>DETECT-studie</strong>.
+        </p>
+        <div class="pill" title="Dit blijft staan op dit apparaat (in je browser)">
+          ✅ Totaal blijft bewaard op dit apparaat
+        </div>
+      </header>
+
+      <div class="content">
+        <h2 style="margin:0 0 6px; font-size:18px;">Tel direct mee</h2>
+        <p class="tiny" style="margin:0 0 12px;">
+          Tik op een knop zodra je ijsjes verkoopt. Je kunt de prijs aanpassen.
+        </p>
+
+        <div class="row">
+          <button id="btn1">+1 ijsje</button>
+          <button id="btn5" class="secondary">+5 ijsjes</button>
+          <button id="btn10" class="secondary">+10 ijsjes</button>
+        </div>
+
+        <div class="row">
+          <button id="undo" class="secondary">↩︎ Laatste terug</button>
+          <button id="reset" class="danger">Reset totaal</button>
+        </div>
+
+        <div id="toast" class="toast"></div>
+
+        <div class="divider"></div>
+
+        <h3 style="margin:0 0 8px; font-size:16px;">Instellingen</h3>
+        <div class="grid">
+          <div>
+            <label for="price">Prijs per ijsje (€)</label>
+            <input id="price" type="number" min="0" step="0.10" value="2.00" />
+          </div>
+          <div>
+            <label for="goal">Doelbedrag (€) (optioneel)</label>
+            <input id="goal" type="number" min="0" step="1" value="250" />
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="dailyReset">Automatische reset per dag</label>
+            <input id="dailyReset" type="number" min="0" max="1" step="1" value="1" />
+            <div class="tiny" style="margin-top:6px;">1 = aan, 0 = uit</div>
+          </div>
+          <div>
+            <label for="titleLine">Korte tekst op de pagina</label>
+            <input id="titleLine" type="text" value="Alles gaat naar de DETECT-studie ❤️" />
+          </div>
+        </div>
+
+        <p class="note">
+          Tip: Wil je deze teller op meerdere telefoons tegelijk gebruiken? Dan moet de teller “online” staan (met een gedeelde database).
+          Voor één stand / één apparaat werkt dit perfect.
+        </p>
+      </div>
+
+      <div class="footer">
+        <div>Gemaakt voor een actiepagina (1 HTML-bestand).</div>
+        <div class="tiny">Werkt offline; QR-code werkt het best als je een web-URL invult.</div>
+      </div>
+    </section>
+
+    <!-- RECHTS: teller + QR -->
+    <aside class="card">
+      <div class="big">
+        <div class="pill" id="headlinePill">Alles gaat naar de DETECT-studie ❤️</div>
+        <div class="total" id="total">€ 0,00</div>
+        <p class="sub">
+          <strong id="count">0</strong> ijsjes verkocht
+          <span class="tiny" id="priceInfo"></span>
+        </p>
+
+        <div class="meter" aria-label="Voortgang">
+          <div class="line">
+            <span>Voortgang richting doel</span>
+            <span id="goalText">—</span>
+          </div>
+          <div class="bar"><div id="barFill"></div></div>
+        </div>
+
+        <div class="qrbox">
+          <h3 style="margin:0 0 6px; font-size:16px;">📱 QR-code naar deze pagina</h3>
+          <p class="tiny" style="margin:0;">
+            Zet je pagina online (bijv. op een simpele host) en plak hier de link. Dan kunnen mensen scannen.
+          </p>
+
+          <div style="margin-top:10px;">
+            <label for="pageUrl">Pagina-URL</label>
+            <input id="pageUrl" type="text" placeholder="https://jouwsite.nl/ijs" />
+            <div class="row" style="margin-top:10px;">
+              <button id="makeQr" class="secondary">QR-code maken</button>
+              <button id="useCurrent" class="secondary">Gebruik huidige URL</button>
+            </div>
+          </div>
+
+          <img id="qrImg" alt="QR-code" />
+
+          <p class="tiny" style="margin:10px 0 0;">
+            Let op: de QR wordt gemaakt via een online QR-service (afbeelding). Zonder internet zie je geen QR.
+          </p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // ========== Helpers ==========
+    const moneyFmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+
+    function todayKey() {
+      // yyyy-mm-dd in lokale tijd
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+    function showToast(msg){
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>{ el.style.display='none'; }, 1800);
+    }
+
+    // ========== State (localStorage) ==========
+    const KEY = 'detect_ice_counter_v1';
+
+    const defaultState = {
+      totalCents: 0,
+      count: 0,
+      priceCents: 200,
+      goalCents: 25000,
+      dailyResetOn: true,
+      lastDay: todayKey(),
+      titleLine: "Alles gaat naar de DETECT-studie ❤️",
+      lastAdd: { qty: 0, cents: 0 } // for undo
+    };
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(KEY);
+        if(!raw) return { ...defaultState };
+        const s = { ...defaultState, ...JSON.parse(raw) };
+
+        // Daily reset if enabled and date changed
+        if(s.dailyResetOn && s.lastDay !== todayKey()){
+          s.totalCents = 0;
+          s.count = 0;
+          s.lastAdd = { qty: 0, cents: 0 };
+          s.lastDay = todayKey();
+        }
+        return s;
+      }catch(e){
+        return { ...defaultState };
+      }
+    }
+
+    function saveState(){
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+
+    let state = loadState();
+
+    // ========== UI elements ==========
+    const elTotal = document.getElementById('total');
+    const elCount = document.getElementById('count');
+    const elPrice = document.getElementById('price');
+    const elGoal = document.getElementById('goal');
+    const elDailyReset = document.getElementById('dailyReset');
+    const elTitleLine = document.getElementById('titleLine');
+    const elHeadline = document.getElementById('headlinePill');
+    const elGoalText = document.getElementById('goalText');
+    const elBar = document.getElementById('barFill');
+    const elPriceInfo = document.getElementById('priceInfo');
+
+    function render(){
+      elTotal.textContent = moneyFmt.format(state.totalCents / 100);
+      elCount.textContent = String(state.count);
+
+      elPrice.value = (state.priceCents/100).toFixed(2);
+      elGoal.value  = (state.goalCents/100).toFixed(0);
+      elDailyReset.value = state.dailyResetOn ? 1 : 0;
+      elTitleLine.value = state.titleLine;
+      elHeadline.textContent = state.titleLine;
+
+      elPriceInfo.textContent = ` • ${moneyFmt.format(state.priceCents/100)} per ijsje`;
+
+      if(state.goalCents > 0){
+        const pct = clamp((state.totalCents / state.goalCents) * 100, 0, 100);
+        elGoalText.textContent = `${moneyFmt.format(state.totalCents/100)} / ${moneyFmt.format(state.goalCents/100)}`;
+        elBar.style.width = `${pct}%`;
+      } else {
+        elGoalText.textContent = 'Geen doel ingesteld';
+        elBar.style.width = '0%';
+      }
+    }
+
+    // ========== Actions ==========
+    function addSales(qty){
+      qty = Math.max(1, Math.floor(qty));
+      const addCents = qty * state.priceCents;
+      state.totalCents += addCents;
+      state.count += qty;
+      state.lastAdd = { qty, cents: addCents };
+      state.lastDay = todayKey(); // update activity day
+      saveState();
+      render();
+      showToast(`Toegevoegd: ${qty} ijsje(s) (+${moneyFmt.format(addCents/100)})`);
+    }
+
+    function undoLast(){
+      if(!state.lastAdd || state.lastAdd.qty <= 0) {
+        showToast('Niets om terug te draaien.');
+        return;
+      }
+      state.totalCents = Math.max(0, state.totalCents - state.lastAdd.cents);
+      state.count = Math.max(0, state.count - state.lastAdd.qty);
+      showToast(`Teruggedraaid: ${state.lastAdd.qty} ijsje(s) (-${moneyFmt.format(state.lastAdd.cents/100)})`);
+      state.lastAdd = { qty: 0, cents: 0 };
+      saveState();
+      render();
+    }
+
+    function hardReset(){
+      state.totalCents = 0;
+      state.count = 0;
+      state.lastAdd = { qty: 0, cents: 0 };
+      state.lastDay = todayKey();
+      saveState();
+      render();
+      showToast('Teller is gereset.');
+    }
