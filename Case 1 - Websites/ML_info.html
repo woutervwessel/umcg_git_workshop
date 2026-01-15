@@ -1,0 +1,2059 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Machine Learning Pipeline — From Data to Decisions</title>
+  <meta name="description" content="An entry-level, good-practice guide to the machine learning pipeline with fancy visuals and interactive explanations." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- D3 for charts (CDN). If you must be fully offline, remove and replace charts with static SVGs. -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <style>
+    :root {
+      --bg: #070812;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.08);
+      --stroke: rgba(255,255,255,0.12);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.72);
+      --faint: rgba(255,255,255,0.55);
+      --shadow: 0 18px 70px rgba(0,0,0,0.55);
+
+      --a: #7c3aed;   /* violet */
+      --b: #06b6d4;   /* cyan */
+      --c: #22c55e;   /* green */
+      --d: #f59e0b;   /* amber */
+      --e: #ef4444;   /* red */
+
+      --radius: 22px;
+      --radius2: 14px;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+
+      --maxw: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background: radial-gradient(1200px 900px at 10% 10%, rgba(124,58,237,0.22), transparent 55%),
+                  radial-gradient(900px 700px at 90% 20%, rgba(6,182,212,0.18), transparent 55%),
+                  radial-gradient(900px 900px at 70% 90%, rgba(34,197,94,0.14), transparent 60%),
+                  radial-gradient(1000px 1000px at 20% 80%, rgba(245,158,11,0.10), transparent 60%),
+                  linear-gradient(180deg, #050610 0%, #070812 55%, #050510 100%);
+      overflow-x: hidden;
+    }
+
+    /* Fancy background grid + glow */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(circle at 40% 20%, black 0%, rgba(0,0,0,0.75) 45%, transparent 70%);
+      opacity: 0.45;
+    }
+    .bg-noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.06;
+      mix-blend-mode: overlay;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.5"/></svg>');
+      background-size: 320px 320px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 28px 18px 90px; }
+
+    /* Top Nav */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(5,6,16,0.72) 0%, rgba(5,6,16,0.45) 100%);
+      border-bottom: 1px solid var(--stroke);
+    }
+    .topbar .inner {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: conic-gradient(from 200deg, var(--a), var(--b), var(--c), var(--d), var(--a));
+      box-shadow: 0 10px 35px rgba(124,58,237,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .logo:after {
+      content: "";
+      position: absolute;
+      inset: -30px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.28), transparent 60%);
+      transform: rotate(20deg);
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .chip {
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.82);
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .chip:hover { transform: translateY(-1px); background: rgba(255,255,255,0.085); border-color: rgba(255,255,255,0.18); }
+    .chip.active { background: rgba(124,58,237,0.18); border-color: rgba(124,58,237,0.35); }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.9);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.09); }
+    .btn.primary {
+      border-color: rgba(6,182,212,0.35);
+      background: linear-gradient(135deg, rgba(6,182,212,0.22), rgba(124,58,237,0.22));
+      box-shadow: 0 12px 40px rgba(6,182,212,0.12);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 34px 0 18px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    @media (max-width: 980px) { .hero { grid-template-columns: 1fr; } }
+
+    .card {
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: -140px -140px auto auto;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle at 30% 30%, rgba(6,182,212,0.22), transparent 60%);
+      transform: rotate(10deg);
+      pointer-events: none;
+    }
+    .card:after {
+      content: "";
+      position: absolute;
+      inset: auto auto -140px -140px;
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle at 30% 30%, rgba(124,58,237,0.20), transparent 62%);
+      transform: rotate(-10deg);
+      pointer-events: none;
+    }
+
+    .hero-main { padding: 26px 22px; }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.82);
+      font-size: 12px;
+      font-weight: 600;
+      user-select: none;
+    }
+    .spark {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: conic-gradient(from 120deg, var(--b), var(--a), var(--c), var(--b));
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.06);
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(30px, 3.6vw, 50px);
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+    .subtitle {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 70ch;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    @media (max-width: 640px) { .hero-grid { grid-template-columns: 1fr; } }
+
+    .mini {
+      border-radius: var(--radius2);
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.12);
+      padding: 12px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mini .t {
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      color: rgba(255,255,255,0.88);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.24);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.06);
+    }
+    .mini .p { color: var(--muted); font-size: 12px; line-height: 1.55; }
+
+    .hero-side { padding: 18px 16px; display: grid; gap: 12px; }
+    .side-top {
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+      padding: 14px 14px;
+    }
+    .side-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .side-title h3 { margin: 0; font-size: 13px; letter-spacing: -0.01em; }
+    .pill {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.78);
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .progress {
+      margin-top: 12px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(6,182,212,0.9), rgba(124,58,237,0.9));
+      transition: width 0.3s ease;
+    }
+
+    .side-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-top: 10px;
+    }
+
+    /* Pipeline map */
+    .map {
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.10);
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .map svg { width: 100%; height: 240px; display: block; }
+    .map .hint {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: rgba(255,255,255,0.72);
+      font-size: 12px;
+    }
+
+    /* Sections */
+    section {
+      margin-top: 22px;
+      scroll-margin-top: 86px;
+    }
+
+    .section-card {
+      padding: 18px 18px;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    .section-card:before {
+      content: "";
+      position: absolute;
+      inset: -180px auto auto -180px;
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle at 30% 30%, rgba(34,197,94,0.16), transparent 64%);
+      pointer-events: none;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      position: relative;
+      overflow: hidden;
+    }
+    .badge:after {
+      content: "";
+      position: absolute;
+      inset: -20px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 60%);
+      transform: rotate(20deg);
+    }
+    .badge span {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+    .section-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 76ch;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 14px;
+      margin-top: 10px;
+      align-items: start;
+    }
+    @media (max-width: 980px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .panel {
+      border-radius: var(--radius2);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.12);
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel h4 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+    }
+
+    ul.clean {
+      margin: 0;
+      padding-left: 18px;
+      color: rgba(255,255,255,0.80);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    ul.clean li { margin: 8px 0; }
+
+    .callout {
+      border-left: 3px solid rgba(6,182,212,0.75);
+      padding: 10px 12px;
+      background: rgba(6,182,212,0.08);
+      border-radius: 12px;
+      color: rgba(255,255,255,0.82);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .warn {
+      border-left-color: rgba(245,158,11,0.85);
+      background: rgba(245,158,11,0.08);
+    }
+
+    .danger {
+      border-left-color: rgba(239,68,68,0.85);
+      background: rgba(239,68,68,0.07);
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* Viz containers */
+    .viz {
+      border-radius: var(--radius2);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: radial-gradient(800px 260px at 10% 20%, rgba(124,58,237,0.12), transparent 60%),
+                  radial-gradient(800px 260px at 90% 30%, rgba(6,182,212,0.10), transparent 60%),
+                  rgba(0,0,0,0.14);
+      padding: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .viz .caption {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .viz .caption .left {
+      display: grid;
+      gap: 4px;
+    }
+    .viz .caption .left strong {
+      font-size: 13px;
+      letter-spacing: -0.01em;
+    }
+    .viz .caption .left span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .viz canvas, .viz svg { width: 100%; height: 240px; display: block; }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      z-index: 1000;
+      pointer-events: none;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(10,11,18,0.88);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 14px 60px rgba(0,0,0,0.55);
+      max-width: 280px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+      color: rgba(255,255,255,0.92);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .tooltip strong { display: block; margin-bottom: 4px; font-size: 12px; }
+    .tooltip .muted { color: rgba(255,255,255,0.72); }
+
+    /* Footer */
+    footer {
+      margin-top: 22px;
+      color: rgba(255,255,255,0.72);
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 18px 8px 0;
+    }
+    .foot-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px) { .foot-grid { grid-template-columns: 1fr; } }
+
+    .hr { height: 1px; background: rgba(255,255,255,0.10); margin: 14px 0; }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+    }
+
+    /* Small helpers */
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .spacer { height: 6px; }
+    .muted { color: var(--muted); }
+
+    /* Print */
+    @media print {
+      .topbar, .bg-grid, .bg-noise, .actions { display: none !important; }
+      body { background: #fff; color: #000; }
+      .card, .section-card, .panel, .viz, .map, .side-top, .mini { box-shadow: none !important; }
+      .card, .section-card, .panel, .viz, .map, .side-top, .mini { background: #fff !important; border: 1px solid #ddd !important; }
+      a { color: #000; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-noise" aria-hidden="true"></div>
+
+  <header class="topbar" role="banner">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div style="font-size:13px; opacity:0.92;">ML Pipeline</div>
+          <div style="font-size:11px; opacity:0.68; font-weight:600; letter-spacing:-0.01em;">Entry-level, good practice</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Pipeline steps">
+        <a class="chip" href="#feature-engineering">Feature Eng.</a>
+        <a class="chip" href="#feature-selection">Feature Sel.</a>
+        <a class="chip" href="#model-selection">Model Sel.</a>
+        <a class="chip" href="#hyperparameter-tuning">Tuning</a>
+        <a class="chip" href="#validation">Validation</a>
+        <a class="chip" href="#final-model">Final Model</a>
+        <a class="chip" href="#evaluation">Evaluation</a>
+      </nav>
+
+      <div class="actions">
+        <button class="btn" id="toggleMotion" type="button" title="Toggle subtle motion">Motion</button>
+        <button class="btn primary" id="scrollNext" type="button" title="Jump to next step">Next step</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" role="main">
+    <div class="hero">
+      <div class="card hero-main">
+        <div class="kicker"><span class="spark" aria-hidden="true"></span> A practical walkthrough, not a buzzword soup</div>
+        <h1>From raw data to a reliable model —
+          <span style="background: linear-gradient(90deg, rgba(6,182,212,0.95), rgba(124,58,237,0.95)); -webkit-background-clip:text; background-clip:text; color: transparent;">the machine learning pipeline</span>
+        </h1>
+        <p class="subtitle">
+          This single-page site explains the most common steps you’ll see in supervised machine learning.
+          It is entry-level, but follows solid engineering and statistical practice: avoid data leakage, use appropriate baselines,
+          validate honestly, and only then evaluate.
+        </p>
+
+        <div class="hero-grid">
+          <div class="mini">
+            <div class="t"><span class="dot" style="background: rgba(6,182,212,0.7);"></span> Guiding rule</div>
+            <div class="p">Treat your test set like a sealed envelope. Only open it once.</div>
+          </div>
+          <div class="mini">
+            <div class="t"><span class="dot" style="background: rgba(124,58,237,0.7);"></span> Core goal</div>
+            <div class="p">Generalize to new data — not just fit the training data.</div>
+          </div>
+          <div class="mini">
+            <div class="t"><span class="dot" style="background: rgba(34,197,94,0.7);"></span> Healthy habit</div>
+            <div class="p">Make your pipeline reproducible: code + seeds + tracked metrics.</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card hero-side">
+        <div class="side-top">
+          <div class="side-title">
+            <h3>Pipeline progress</h3>
+            <span class="pill" id="stepPill">0 / 7</span>
+          </div>
+          <div class="progress" aria-label="Progress bar">
+            <div class="bar" id="progressBar"></div>
+          </div>
+          <div class="side-note" id="progressNote">
+            Scroll to explore each step. Hover or tap the visuals for quick explanations.
+          </div>
+        </div>
+
+        <div class="map" aria-label="Pipeline map">
+          <svg id="pipelineMap" viewBox="0 0 520 240" role="img" aria-label="A flow diagram of the ML pipeline"></svg>
+          <div class="hint">
+            <span class="muted">Tip:</span>
+            <span class="kbd">Click nodes</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ========== Feature Engineering ========== -->
+    <section id="feature-engineering" data-step="1">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(6,182,212,0.25);"><span>1</span></div>
+            <div>
+              <h2>Feature engineering</h2>
+              <p>
+                Turn raw inputs into useful signals. The best features encode real-world structure in a way that your model can learn.
+                Always design features using only information available at prediction time.
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">Goal: signal ↑, leakage ↓</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>Good practice checklist</h4>
+            <ul class="clean">
+              <li><strong>Start simple:</strong> missing values, standardization, and sensible encodings (one-hot, target encoding with care).</li>
+              <li><strong>Use domain logic:</strong> ratios, time deltas, aggregates, log transforms for skewed variables.</li>
+              <li><strong>Prevent leakage:</strong> never use future information (e.g., post-outcome stats, look-ahead windows).</li>
+              <li><strong>Fit transforms on training only:</strong> apply the same fitted transform to validation/test.</li>
+              <li><strong>Keep it reproducible:</strong> feature code is part of the model. Version it.</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout">
+              Think of features as the language you use to explain the problem to your algorithm.
+              Better language usually beats a fancier model.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: “raw vs engineered” separation</strong>
+                <span>Hover points. Engineering often makes classes easier to separate.</span>
+              </div>
+              <span class="pill">Interactive</span>
+            </div>
+            <svg id="vizFeatures" viewBox="0 0 520 240" aria-label="Scatter plot illustrating feature engineering"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Feature Selection ========== -->
+    <section id="feature-selection" data-step="2">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(124,58,237,0.25);"><span>2</span></div>
+            <div>
+              <h2>Feature selection</h2>
+              <p>
+                Choose a subset of features that improves generalization, stability, cost, or interpretability.
+                Selection should be done <em>inside</em> cross-validation to avoid optimistic results.
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">Goal: simpler, not weaker</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>Common approaches (entry-level)</h4>
+            <ul class="clean">
+              <li><strong>Filter methods:</strong> remove near-zero variance, high missingness, high correlation duplicates.</li>
+              <li><strong>Wrapper methods:</strong> recursive feature elimination (RFE) with CV, stepwise selection (careful).</li>
+              <li><strong>Embedded methods:</strong> L1 regularization (Lasso), tree-based importance, permutation importance.</li>
+              <li><strong>Business constraints:</strong> cost to collect a feature, latency, privacy.</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout warn">
+              Avoid selecting features using the full dataset before CV. That “peeks” at validation data and inflates performance.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: importance vs stability</strong>
+                <span>Move the threshold to keep more or fewer features.</span>
+              </div>
+              <div class="row">
+                <label style="font-size:12px; color: rgba(255,255,255,0.82);">Threshold</label>
+                <input id="selThreshold" type="range" min="0" max="100" value="55" style="width: 160px;" />
+              </div>
+            </div>
+            <svg id="vizSelection" viewBox="0 0 520 240" aria-label="Bar chart illustrating feature selection"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Model Selection ========== -->
+    <section id="model-selection" data-step="3">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(34,197,94,0.25);"><span>3</span></div>
+            <div>
+              <h2>Model selection</h2>
+              <p>
+                Pick a modeling approach that matches your data, constraints, and risk tolerance.
+                Always compare against a simple baseline to ensure you are adding real value.
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">Baseline → Candidates → Winner</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>How to choose (good practice)</h4>
+            <ul class="clean">
+              <li><strong>Start with baselines:</strong> majority class, linear/logistic regression, simple tree.</li>
+              <li><strong>Match the problem:</strong> linear models for speed + interpretability; trees/boosting for nonlinearity; neural nets for large data and complex patterns.</li>
+              <li><strong>Consider constraints:</strong> latency, memory, explainability, fairness, and ability to update.</li>
+              <li><strong>Keep the pipeline consistent:</strong> same splits, same preprocessing, comparable metrics.</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout">
+              A strong baseline is not an enemy—it is a safety rail. If you can’t beat it honestly, don’t ship complexity.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: bias–variance trade-off</strong>
+                <span>As model complexity increases, training error usually falls; validation error has a sweet spot.</span>
+              </div>
+              <span class="pill">Concept</span>
+            </div>
+            <svg id="vizBiasVariance" viewBox="0 0 520 240" aria-label="Chart showing bias-variance trade-off"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Hyperparameter Tuning ========== -->
+    <section id="hyperparameter-tuning" data-step="4">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(245,158,11,0.25);"><span>4</span></div>
+            <div>
+              <h2>Hyperparameter tuning</h2>
+              <p>
+                Hyperparameters control how a model learns (e.g., tree depth, regularization strength, learning rate).
+                Tune them using cross-validation and a clear search strategy.
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">Search smart, not wide</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>Practical tuning strategy</h4>
+            <ul class="clean">
+              <li><strong>Define the objective:</strong> pick one primary metric (and a few secondary) before tuning.</li>
+              <li><strong>Choose a search:</strong> random search often beats grid search when many parameters matter.</li>
+              <li><strong>Use CV:</strong> average across folds to reduce luck from one split.</li>
+              <li><strong>Budget:</strong> cap time/iterations; start coarse, then refine near good regions.</li>
+              <li><strong>Don’t overfit the validation:</strong> too many tries can “tune to noise.” Consider nested CV when stakes are high.</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout warn">
+              If you tune using the test set, you no longer have a test set.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: random search vs grid search</strong>
+                <span>Random search covers more of the space when only a few knobs really matter.</span>
+              </div>
+              <div class="row">
+                <button class="btn" id="btnGrid" type="button">Grid</button>
+                <button class="btn" id="btnRandom" type="button">Random</button>
+              </div>
+            </div>
+            <svg id="vizSearch" viewBox="0 0 520 240" aria-label="Scatter plot comparing grid vs random search"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Validation ========== -->
+    <section id="validation" data-step="5">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(239,68,68,0.25);"><span>5</span></div>
+            <div>
+              <h2>Validation</h2>
+              <p>
+                Validate to estimate real-world performance during development.
+                Use splits that reflect how the model will be used (random, time-based, group-based).
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">No leakage. Realistic splits.</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>Split strategies (choose based on your data)</h4>
+            <ul class="clean">
+              <li><strong>Holdout split:</strong> fast; good for large datasets and quick iteration.</li>
+              <li><strong>K-fold CV:</strong> more stable estimate; common default for tabular data.</li>
+              <li><strong>Stratified splits:</strong> preserve class ratios for imbalanced classification.</li>
+              <li><strong>Time series split:</strong> train on past, validate on future.</li>
+              <li><strong>Group split:</strong> keep correlated samples together (e.g., by user, patient, device).</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout danger">
+              Leakage often looks like “amazing accuracy.” If performance seems too good, investigate your splits and features.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: train/validation/test timeline</strong>
+                <span>Time-based splits prevent training on the future.</span>
+              </div>
+              <span class="pill">Interactive</span>
+            </div>
+            <svg id="vizSplits" viewBox="0 0 520 240" aria-label="Timeline showing train-validation-test splits"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Final Model ========== -->
+    <section id="final-model" data-step="6">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(6,182,212,0.25);"><span>6</span></div>
+            <div>
+              <h2>Final model</h2>
+              <p>
+                Lock your choices (features + algorithm + hyperparameters), retrain using all development data,
+                and package the entire preprocessing + model as one reproducible artifact.
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">Freeze decisions</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>What “final” means in practice</h4>
+            <ul class="clean">
+              <li><strong>One pipeline:</strong> preprocessing + feature steps + model, executed in the same order every time.</li>
+              <li><strong>Train on full dev set:</strong> typically train + validation combined after tuning is done.</li>
+              <li><strong>Document assumptions:</strong> required inputs, expected ranges, missing-value behavior.</li>
+              <li><strong>Reproducibility:</strong> fixed random seeds, saved code/version, dataset snapshot, configuration.</li>
+              <li><strong>Deployment readiness:</strong> monitoring plan, fallback behavior, and retraining trigger.</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout">
+              A model is more than weights. The pipeline is the product.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: pipeline as a single artifact</strong>
+                <span>Preprocess → Model → Output. The boundaries matter.</span>
+              </div>
+              <span class="pill">Diagram</span>
+            </div>
+            <svg id="vizArtifact" viewBox="0 0 520 240" aria-label="Diagram illustrating packaging a pipeline"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Evaluation ========== -->
+    <section id="evaluation" data-step="7">
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="badge" style="border-color: rgba(124,58,237,0.25);"><span>7</span></div>
+            <div>
+              <h2>Evaluation</h2>
+              <p>
+                Evaluate once on the untouched test set. Report metrics that reflect the business outcome,
+                include uncertainty, and check failure modes.
+              </p>
+            </div>
+          </div>
+          <div class="row">
+            <span class="kbd">Test once</span>
+            <span class="kbd">Explain outcomes</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h4>What to measure (and why)</h4>
+            <ul class="clean">
+              <li><strong>Classification:</strong> accuracy (only if balanced), precision/recall, F1, ROC-AUC, PR-AUC.</li>
+              <li><strong>Regression:</strong> MAE, RMSE, R², and residual analysis.</li>
+              <li><strong>Calibration:</strong> do predicted probabilities match real frequencies?</li>
+              <li><strong>Robustness:</strong> performance by subgroup, time, geography, device; sensitivity to missing data.</li>
+              <li><strong>Communicate trade-offs:</strong> threshold selection, cost of false positives vs false negatives.</li>
+            </ul>
+            <div class="spacer"></div>
+            <div class="callout">
+              Good evaluation is part statistics and part storytelling: show what the model does well, and where it fails.
+            </div>
+          </div>
+
+          <div class="viz">
+            <div class="caption">
+              <div class="left">
+                <strong>Visualization: confusion matrix + threshold</strong>
+                <span>Adjust threshold to see precision/recall trade-offs.</span>
+              </div>
+              <div class="row">
+                <label style="font-size:12px; color: rgba(255,255,255,0.82);">Threshold</label>
+                <input id="thresh" type="range" min="0" max="100" value="50" style="width: 160px;" />
+              </div>
+            </div>
+            <svg id="vizConfusion" viewBox="0 0 520 240" aria-label="Confusion matrix visualization"></svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="hr"></div>
+      <div class="foot-grid">
+        <div>
+          <strong style="color: rgba(255,255,255,0.86);">A final reminder</strong>
+          <p>
+            The pipeline is iterative. You often loop back: new features suggest a different model; new validation reveals leakage;
+            evaluation exposes failure modes that need better data.
+            The key is to iterate without cheating—keep your test set sealed and your process reproducible.
+          </p>
+          <p class="muted">
+            Tip for learners: implement this pipeline using a framework pipeline object (e.g., scikit-learn Pipeline) so preprocessing is
+            automatically applied correctly.
+          </p>
+        </div>
+        <div>
+          <strong style="color: rgba(255,255,255,0.86);">Controls</strong>
+          <p class="muted">
+            Use <span class="kbd">Next step</span> to jump, and hover the charts for explanations.
+            Print-friendly styling is included.
+          </p>
+          <div class="row">
+            <button class="btn" id="btnTop" type="button">Back to top</button>
+            <button class="btn" id="btnPrint" type="button">Print</button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="status" aria-live="polite"></div>
+
+  <script>
+    // =============== Utilities ===============
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let motionEnabled = !prefersReduced;
+
+    // Tooltip
+    const tooltip = $('#tooltip');
+    function showTip(html, x, y) {
+      tooltip.innerHTML = html;
+      tooltip.style.left = (x + 14) + 'px';
+      tooltip.style.top = (y + 14) + 'px';
+      tooltip.style.opacity = '1';
+      tooltip.style.transform = 'translateY(0px)';
+    }
+    function hideTip() {
+      tooltip.style.opacity = '0';
+      tooltip.style.transform = 'translateY(6px)';
+    }
+
+    // Nice number formatting
+    const fmt = d3.format('.2f');
+
+    // =============== Nav active state + progress ===============
+    const steps = $$('section[data-step]');
+    const chips = $$('.chip');
+    const progressBar = $('#progressBar');
+    const stepPill = $('#stepPill');
+    const progressNote = $('#progressNote');
+
+    function setActiveById(id) {
+      chips.forEach(c => c.classList.toggle('active', c.getAttribute('href') === '#' + id));
+    }
+
+    // Intersection observer to mark section
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (!visible) return;
+      const el = visible.target;
+      const step = Number(el.dataset.step);
+      const total = steps.length;
+
+      setActiveById(el.id);
+      stepPill.textContent = `${step} / ${total}`;
+      progressBar.style.width = `${(step/total)*100}%`;
+
+      const msg = {
+        1: 'Create signals from raw inputs. Fit transforms on train only.',
+        2: 'Keep what helps and remove what hurts. Select inside CV.',
+        3: 'Compare baselines and candidates fairly.',
+        4: 'Tune with a budgeted, CV-based search strategy.',
+        5: 'Validate realistically; pick splits that match deployment.',
+        6: 'Freeze decisions and package the entire pipeline.',
+        7: 'Evaluate once on the test set; explain trade-offs and failures.'
+      };
+      progressNote.textContent = msg[step] || 'Scroll to explore each step.';
+    }, { threshold: [0.35, 0.55, 0.75] });
+    steps.forEach(s => io.observe(s));
+
+    // Next step button
+    $('#scrollNext').addEventListener('click', () => {
+      const active = chips.find(c => c.classList.contains('active'));
+      const idx = active ? chips.indexOf(active) : -1;
+      const next = chips[(idx + 1) % chips.length];
+      const id = next.getAttribute('href');
+      document.querySelector(id).scrollIntoView({ behavior: motionEnabled ? 'smooth' : 'auto', block: 'start' });
+    });
+
+    // Back to top
+    $('#btnTop').addEventListener('click', () => window.scrollTo({ top: 0, behavior: motionEnabled ? 'smooth' : 'auto' }));
+    $('#btnPrint').addEventListener('click', () => window.print());
+
+    // Toggle motion
+    $('#toggleMotion').addEventListener('click', () => {
+      motionEnabled = !motionEnabled;
+      $('#toggleMotion').textContent = motionEnabled ? 'Motion' : 'Motion (off)';
+    });
+    if (!motionEnabled) $('#toggleMotion').textContent = 'Motion (off)';
+
+    // =============== Pipeline Map (clickable) ===============
+    (function renderMap(){
+      const svg = d3.select('#pipelineMap');
+      svg.selectAll('*').remove();
+
+      const nodes = [
+        { id: 'feature-engineering', label: 'Feature\nEngineering', color: 'rgba(6,182,212,0.95)', x: 70, y: 65 },
+        { id: 'feature-selection',  label: 'Feature\nSelection',  color: 'rgba(124,58,237,0.95)', x: 190, y: 65 },
+        { id: 'model-selection',    label: 'Model\nSelection',    color: 'rgba(34,197,94,0.95)', x: 310, y: 65 },
+        { id: 'hyperparameter-tuning', label: 'Hyperparameter\nTuning', color: 'rgba(245,158,11,0.95)', x: 430, y: 65 },
+        { id: 'validation',         label: 'Validation',         color: 'rgba(239,68,68,0.95)', x: 250, y: 160 },
+        { id: 'final-model',        label: 'Final\nModel',        color: 'rgba(6,182,212,0.95)', x: 370, y: 160 },
+        { id: 'evaluation',         label: 'Evaluation',         color: 'rgba(124,58,237,0.95)', x: 480, y: 160 }
+      ];
+
+      const links = [
+        ['feature-engineering','feature-selection'],
+        ['feature-selection','model-selection'],
+        ['model-selection','hyperparameter-tuning'],
+        ['hyperparameter-tuning','validation'],
+        ['validation','final-model'],
+        ['final-model','evaluation']
+      ].map(([s,t]) => ({ source: nodes.find(n=>n.id===s), target: nodes.find(n=>n.id===t) }));
+
+      // Glow filter
+      const defs = svg.append('defs');
+      const flt = defs.append('filter').attr('id','glow');
+      flt.append('feGaussianBlur').attr('stdDeviation','3.5').attr('result','coloredBlur');
+      const merge = flt.append('feMerge');
+      merge.append('feMergeNode').attr('in','coloredBlur');
+      merge.append('feMergeNode').attr('in','SourceGraphic');
+
+      // Links
+      svg.append('g')
+        .selectAll('path')
+        .data(links)
+        .enter()
+        .append('path')
+        .attr('d', d => {
+          const sx = d.source.x, sy = d.source.y;
+          const tx = d.target.x, ty = d.target.y;
+          const mx = (sx+tx)/2;
+          return `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`;
+        })
+        .attr('fill','none')
+        .attr('stroke','rgba(255,255,255,0.22)')
+        .attr('stroke-width', 2)
+        .attr('stroke-linecap','round');
+
+      // Nodes
+      const g = svg.append('g').selectAll('g.node').data(nodes).enter().append('g')
+        .attr('class','node')
+        .attr('transform', d => `translate(${d.x},${d.y})`)
+        .style('cursor','pointer');
+
+      g.append('circle')
+        .attr('r', 22)
+        .attr('fill', d => d.color)
+        .attr('opacity', 0.22)
+        .attr('filter','url(#glow)');
+
+      g.append('rect')
+        .attr('x', -44)
+        .attr('y', -18)
+        .attr('width', 88)
+        .attr('height', 36)
+        .attr('rx', 14)
+        .attr('fill', 'rgba(255,255,255,0.06)')
+        .attr('stroke', 'rgba(255,255,255,0.14)');
+
+      g.append('circle')
+        .attr('r', 6)
+        .attr('cx', -28)
+        .attr('fill', d => d.color)
+        .attr('opacity', 0.9);
+
+      g.append('text')
+        .attr('text-anchor','start')
+        .attr('x', -18)
+        .attr('y', -2)
+        .attr('fill','rgba(255,255,255,0.90)')
+        .attr('font-size', 11)
+        .attr('font-weight', 700)
+        .each(function(d){
+          const lines = d.label.split('\n');
+          const t = d3.select(this);
+          lines.forEach((ln, i) => t.append('tspan').attr('x', -18).attr('dy', i===0?0:12).text(ln));
+        });
+
+      g.on('click', (evt, d) => {
+        document.querySelector('#' + d.id).scrollIntoView({ behavior: motionEnabled ? 'smooth' : 'auto', block: 'start' });
+      }).on('mousemove', (evt, d) => {
+        showTip(`<strong>${d.label.replace('\n',' ')}</strong><span class="muted">Click to jump to this step.</span>`, evt.clientX, evt.clientY);
+      }).on('mouseleave', hideTip);
+
+      // Simple animated "pulse" on nodes (optional)
+      if (motionEnabled) {
+        (function pulse(){
+          g.selectAll('circle').filter((d,i) => i===0)
+            .transition().duration(1200)
+            .attr('r', 26)
+            .attr('opacity', 0.08)
+            .transition().duration(1200)
+            .attr('r', 22)
+            .attr('opacity', 0.22)
+            .on('end', () => { if (motionEnabled) pulse(); });
+        })();
+      }
+    })();
+
+    // =============== Visualization helpers ===============
+    function baseSvg(sel) {
+      const svg = d3.select(sel);
+      svg.selectAll('*').remove();
+      const w = 520, h = 240;
+      const m = { t: 16, r: 16, b: 28, l: 36 };
+      const innerW = w - m.l - m.r;
+      const innerH = h - m.t - m.b;
+      const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+      return { svg, g, w, h, m, innerW, innerH };
+    }
+
+    function axes(g, x, y, innerH) {
+      g.append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).ticks(6).tickSizeOuter(0))
+        .call(styleAxis);
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(5).tickSizeOuter(0))
+        .call(styleAxis);
+    }
+
+    function styleAxis(sel) {
+      sel.selectAll('path').attr('stroke','rgba(255,255,255,0.18)');
+      sel.selectAll('line').attr('stroke','rgba(255,255,255,0.12)');
+      sel.selectAll('text').attr('fill','rgba(255,255,255,0.62)').attr('font-size', 10);
+    }
+
+    function gridlines(g, x, y, innerW, innerH) {
+      g.append('g')
+        .attr('opacity', 0.6)
+        .call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat(''))
+        .call(s => {
+          s.selectAll('line').attr('stroke','rgba(255,255,255,0.07)');
+          s.selectAll('path').remove();
+        });
+      g.append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .attr('opacity', 0.45)
+        .call(d3.axisBottom(x).ticks(6).tickSize(-innerH).tickFormat(''))
+        .call(s => {
+          s.selectAll('line').attr('stroke','rgba(255,255,255,0.06)');
+          s.selectAll('path').remove();
+        });
+    }
+
+    function addTitle(g, text) {
+      g.append('text')
+        .attr('x', 0)
+        .attr('y', -4)
+        .attr('fill', 'rgba(255,255,255,0.78)')
+        .attr('font-size', 11)
+        .attr('font-weight', 700)
+        .text(text);
+    }
+
+    // =============== Viz 1: Feature engineering scatter ===============
+    (function renderFeatures(){
+      const { g, innerW, innerH } = baseSvg('#vizFeatures');
+
+      // Raw: overlapping clusters
+      // Engineered: apply a nonlinear transform to increase separation
+      const n = 130;
+      const rng = d3.randomLcg(0.42);
+      const gauss = d3.randomNormal.source(rng)(0, 1);
+
+      const raw = d3.range(n).map(i => {
+        const cls = i < n/2 ? 0 : 1;
+        const x = gauss() + (cls ? 0.8 : -0.6);
+        const y = gauss() + (cls ? 0.6 : -0.5);
+        return { cls, x, y };
+      });
+
+      // Engineered feature: add interaction and a squashing
+      const engineered = raw.map(d => {
+        const x2 = d.x;
+        const y2 = Math.tanh(d.y + 0.65*d.x);
+        return { ...d, ex: x2, ey: y2 };
+      });
+
+      // Layout: left half raw, right half engineered
+      const xScale = d3.scaleLinear().domain([-3, 3]).range([0, innerW]);
+      const yScale = d3.scaleLinear().domain([-1.2, 1.2]).range([innerH, 0]);
+
+      // Background split
+      g.append('rect').attr('x', 0).attr('y', 0).attr('width', innerW/2 - 6).attr('height', innerH)
+        .attr('rx', 14).attr('fill','rgba(255,255,255,0.03)').attr('stroke','rgba(255,255,255,0.10)');
+      g.append('rect').attr('x', innerW/2 + 6).attr('y', 0).attr('width', innerW/2 - 6).attr('height', innerH)
+        .attr('rx', 14).attr('fill','rgba(255,255,255,0.03)').attr('stroke','rgba(255,255,255,0.10)');
+
+      g.append('text').attr('x', 12).attr('y', 18).attr('fill','rgba(255,255,255,0.78)').attr('font-size', 11).attr('font-weight', 700).text('Raw features');
+      g.append('text').attr('x', innerW/2 + 18).attr('y', 18).attr('fill','rgba(255,255,255,0.78)').attr('font-size', 11).attr('font-weight', 700).text('Engineered feature');
+
+      function drawPoints(data, offsetX, label) {
+        const gx = g.append('g').attr('transform', `translate(${offsetX},0)`);
+        const localX = d3.scaleLinear().domain([-3,3]).range([12, innerW/2 - 18]);
+        const localY = yScale;
+
+        gx.selectAll('circle')
+          .data(data)
+          .enter()
+          .append('circle')
+          .attr('cx', d => localX(d.x))
+          .attr('cy', d => localY(label==='raw' ? d.y : d.ey))
+          .attr('r', 4)
+          .attr('fill', d => d.cls ? 'rgba(6,182,212,0.95)' : 'rgba(124,58,237,0.95)')
+          .attr('opacity', 0.72)
+          .on('mousemove', (evt, d) => {
+            const which = label==='raw'
+              ? `x=${fmt(d.x)}, y=${fmt(d.y)}`
+              : `engineered y=${fmt(d.ey)} (≈tanh(y + 0.65·x))`;
+            showTip(`<strong>${d.cls ? 'Class B' : 'Class A'}</strong><span class="muted">${which}</span>`, evt.clientX, evt.clientY);
+          })
+          .on('mouseleave', hideTip);
+      }
+
+      drawPoints(engineered, 0, 'raw');
+      drawPoints(engineered, innerW/2 + 6, 'eng');
+
+      // Legend
+      const leg = g.append('g').attr('transform', `translate(${innerW - 190},${innerH - 20})`);
+      const items = [
+        { name: 'Class A', col: 'rgba(124,58,237,0.95)' },
+        { name: 'Class B', col: 'rgba(6,182,212,0.95)' }
+      ];
+      items.forEach((it, i) => {
+        const gg = leg.append('g').attr('transform', `translate(${i*95},0)`);
+        gg.append('circle').attr('r', 5).attr('cx', 0).attr('cy', 0).attr('fill', it.col).attr('opacity', 0.9);
+        gg.append('text').attr('x', 10).attr('y', 4).attr('fill','rgba(255,255,255,0.72)').attr('font-size', 11).text(it.name);
+      });
+    })();
+
+    // =============== Viz 2: Feature selection bars with threshold ===============
+    const selectionState = { threshold: 0.55 };
+    function renderSelection(){
+      const { g, innerW, innerH } = baseSvg('#vizSelection');
+
+      const rng = d3.randomLcg(0.11);
+      const rand = d3.randomUniform.source(rng)(0.05, 1.0);
+
+      // Synthetic importances + stability score
+      const feats = d3.range(12).map(i => {
+        const importance = rand();
+        const stability = Math.min(1, Math.max(0, importance + d3.randomNormal.source(rng)(0,0.18)()));
+        return {
+          name: `f_${String(i+1).padStart(2,'0')}`,
+          importance,
+          stability,
+          score: 0.65*importance + 0.35*stability
+        };
+      }).sort((a,b) => b.score - a.score);
+
+      const x = d3.scaleBand().domain(feats.map(d=>d.name)).range([0, innerW]).padding(0.22);
+      const y = d3.scaleLinear().domain([0, 1]).nice().range([innerH, 0]);
+
+      gridlines(g, d3.scaleLinear().domain([0,feats.length]).range([0,innerW]), y, innerW, innerH);
+
+      // Threshold line
+      const thr = selectionState.threshold;
+      g.append('line')
+        .attr('x1', 0).attr('x2', innerW)
+        .attr('y1', y(thr)).attr('y2', y(thr))
+        .attr('stroke', 'rgba(245,158,11,0.75)')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '6 6');
+      g.append('text')
+        .attr('x', innerW - 2)
+        .attr('y', y(thr) - 8)
+        .attr('text-anchor','end')
+        .attr('fill','rgba(245,158,11,0.82)')
+        .attr('font-size', 11)
+        .attr('font-weight', 700)
+        .text(`threshold = ${fmt(thr)}`);
+
+      // Bars
+      g.selectAll('rect.bar')
+        .data(feats)
+        .enter()
+        .append('rect')
+        .attr('class','bar')
+        .attr('x', d => x(d.name))
+        .attr('y', d => y(d.score))
+        .attr('width', x.bandwidth())
+        .attr('height', d => innerH - y(d.score))
+        .attr('rx', 8)
+        .attr('fill', d => d.score >= thr ? 'rgba(34,197,94,0.85)' : 'rgba(255,255,255,0.18)')
+        .attr('stroke', 'rgba(255,255,255,0.10)')
+        .on('mousemove', (evt, d) => {
+          const keep = d.score >= thr;
+          showTip(
+            `<strong>${d.name} ${keep ? '(kept)' : '(dropped)'}</strong>` +
+            `<span class="muted">importance=${fmt(d.importance)} · stability=${fmt(d.stability)} · combined=${fmt(d.score)}</span>`,
+            evt.clientX, evt.clientY
+          );
+        })
+        .on('mouseleave', hideTip);
+
+      // Axis
+      g.append('g')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).tickSizeOuter(0))
+        .call(s => {
+          s.selectAll('text').attr('fill','rgba(255,255,255,0.62)').attr('font-size', 10).attr('font-family', 'JetBrains Mono');
+          s.selectAll('path').attr('stroke','rgba(255,255,255,0.18)');
+          s.selectAll('line').attr('stroke','rgba(255,255,255,0.12)');
+        });
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(5).tickSizeOuter(0))
+        .call(styleAxis);
+
+      // Count kept
+      const kept = feats.filter(d => d.score >= thr).length;
+      g.append('text')
+        .attr('x', 0)
+        .attr('y', -4)
+        .attr('fill','rgba(255,255,255,0.78)')
+        .attr('font-size', 11)
+        .attr('font-weight', 700)
+        .text(`Kept ${kept} / ${feats.length} features`);
+    }
+    renderSelection();
+
+    $('#selThreshold').addEventListener('input', (e) => {
+      selectionState.threshold = Number(e.target.value) / 100;
+      renderSelection();
+    });
+
+    // =============== Viz 3: Bias-variance curve ===============
+    (function renderBiasVariance(){
+      const { g, innerW, innerH } = baseSvg('#vizBiasVariance');
+
+      const x = d3.scaleLinear().domain([0, 10]).range([0, innerW]);
+      const y = d3.scaleLinear().domain([0, 1]).range([innerH, 0]);
+
+      gridlines(g, x, y, innerW, innerH);
+
+      // Construct conceptual curves
+      const pts = d3.range(0, 10.01, 0.25).map(t => {
+        const train = 0.85*Math.exp(-0.32*t) + 0.08;
+        const valid = 0.55*Math.exp(-0.22*t) + 0.12 + 0.02*(t-5)*(t-5);
+        return { t, train, valid };
+      });
+
+      const line = d3.line()
+        .x(d => x(d.t))
+        .y(d => y(d.y))
+        .curve(d3.curveCatmullRom.alpha(0.7));
+
+      // Sweet spot
+      const best = pts.reduce((a,b) => (b.valid < a.valid ? b : a), pts[0]);
+
+      // Train curve
+      g.append('path')
+        .attr('d', line(pts.map(d => ({...d, y: d.train}))))
+        .attr('fill','none')
+        .attr('stroke','rgba(6,182,212,0.95)')
+        .attr('stroke-width', 3)
+        .attr('opacity', 0.85);
+
+      // Valid curve
+      g.append('path')
+        .attr('d', line(pts.map(d => ({...d, y: d.valid}))))
+        .attr('fill','none')
+        .attr('stroke','rgba(245,158,11,0.92)')
+        .attr('stroke-width', 3)
+        .attr('opacity', 0.85);
+
+      // Best point
+      g.append('circle')
+        .attr('cx', x(best.t))
+        .attr('cy', y(best.valid))
+        .attr('r', 6)
+        .attr('fill', 'rgba(34,197,94,0.95)')
+        .attr('opacity', 0.9);
+
+      g.append('text')
+        .attr('x', x(best.t) + 10)
+        .attr('y', y(best.valid) - 10)
+        .attr('fill','rgba(34,197,94,0.85)')
+        .attr('font-size', 11)
+        .attr('font-weight', 800)
+        .text('sweet spot');
+
+      axes(g, x, y, innerH);
+
+      // Labels
+      g.append('text').attr('x', 6).attr('y', 12).attr('fill','rgba(255,255,255,0.78)').attr('font-size', 11).attr('font-weight', 700).text('Error vs model complexity');
+      const legend = g.append('g').attr('transform', `translate(${innerW-170},${18})`);
+      const items = [
+        { name: 'Training error', col: 'rgba(6,182,212,0.95)' },
+        { name: 'Validation error', col: 'rgba(245,158,11,0.92)' }
+      ];
+      items.forEach((it,i) => {
+        const gg = legend.append('g').attr('transform', `translate(0,${i*16})`);
+        gg.append('line').attr('x1',0).attr('x2',16).attr('y1',0).attr('y2',0).attr('stroke', it.col).attr('stroke-width', 3);
+        gg.append('text').attr('x', 22).attr('y', 4).attr('fill','rgba(255,255,255,0.72)').attr('font-size', 11).text(it.name);
+      });
+
+      // Tooltip overlay
+      g.append('rect')
+        .attr('x',0).attr('y',0).attr('width', innerW).attr('height', innerH)
+        .attr('fill','transparent')
+        .on('mousemove', (evt) => {
+          const [mx] = d3.pointer(evt);
+          const t = x.invert(mx);
+          const nearest = pts.reduce((a,b) => Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a, pts[0]);
+          showTip(
+            `<strong>Complexity ~ ${fmt(nearest.t)}</strong>` +
+            `<span class="muted">training=${fmt(nearest.train)} · validation=${fmt(nearest.valid)}</span>`,
+            evt.clientX, evt.clientY
+          );
+        })
+        .on('mouseleave', hideTip);
+    })();
+
+    // =============== Viz 4: Grid vs Random search ===============
+    const searchState = { mode: 'random' };
+
+    function renderSearch(){
+      const { g, innerW, innerH } = baseSvg('#vizSearch');
+      const x = d3.scaleLinear().domain([0, 1]).range([0, innerW]);
+      const y = d3.scaleLinear().domain([0, 1]).range([innerH, 0]);
+      gridlines(g, x, y, innerW, innerH);
+      axes(g, x, y, innerH);
+
+      // Objective: only x matters a lot, y matters a little
+      const objective = (px, py) => {
+        const bestX = 0.72;
+        const termX = Math.exp(-Math.pow((px-bestX)/0.12, 2));
+        const termY = Math.exp(-Math.pow((py-0.35)/0.35, 2));
+        return 0.15 + 0.80*(0.85*termX + 0.15*termY);
+      };
+
+      // Render a soft background heatmap (coarse grid)
+      const heat = [];
+      const step = 0.05;
+      for (let i=0;i<=1;i+=step) {
+        for (let j=0;j<=1;j+=step) {
+          heat.push({ x:i, y:j, z: objective(i,j) });
+        }
+      }
+      const z = d3.scaleLinear().domain(d3.extent(heat, d=>d.z)).range([0.06, 0.22]);
+      g.append('g').selectAll('rect')
+        .data(heat)
+        .enter()
+        .append('rect')
+        .attr('x', d=>x(d.x))
+        .attr('y', d=>y(d.y))
+        .attr('width', innerW*step + 1)
+        .attr('height', innerH*step + 1)
+        .attr('fill', 'rgba(124,58,237,1)')
+        .attr('opacity', d=>z(d.z));
+
+      // Candidate points
+      let pts = [];
+      if (searchState.mode === 'grid') {
+        const k = 8;
+        for (let i=0;i<k;i++) {
+          for (let j=0;j<k;j++) {
+            const px = i/(k-1);
+            const py = j/(k-1);
+            pts.push({ x:px, y:py, score: objective(px,py) });
+          }
+        }
+      } else {
+        const rng = d3.randomLcg(0.77);
+        const unif = d3.randomUniform.source(rng)(0,1);
+        for (let i=0;i<64;i++) {
+          const px = unif();
+          const py = unif();
+          pts.push({ x:px, y:py, score: objective(px,py) });
+        }
+      }
+
+      const best = pts.reduce((a,b) => b.score > a.score ? b : a, pts[0]);
+
+      // Points
+      g.append('g')
+        .selectAll('circle')
+        .data(pts)
+        .enter()
+        .append('circle')
+        .attr('cx', d=>x(d.x))
+        .attr('cy', d=>y(d.y))
+        .attr('r', d => d===best ? 6 : 4)
+        .attr('fill', d => d===best ? 'rgba(34,197,94,0.95)' : 'rgba(6,182,212,0.78)')
+        .attr('stroke','rgba(255,255,255,0.10)')
+        .attr('opacity', 0.9)
+        .on('mousemove', (evt, d) => {
+          const label = d===best ? 'best found' : 'trial';
+          showTip(`<strong>${label}</strong><span class="muted">x=${fmt(d.x)} · y=${fmt(d.y)} · score=${fmt(d.score)}</span>`, evt.clientX, evt.clientY);
+        })
+        .on('mouseleave', hideTip);
+
+      // Labels
+      g.append('text').attr('x', 6).attr('y', 12).attr('fill','rgba(255,255,255,0.78)').attr('font-size', 11).attr('font-weight', 700)
+        .text(searchState.mode === 'grid' ? 'Grid search (systematic but limited coverage)' : 'Random search (often better coverage)');
+
+      g.append('text').attr('x', 6).attr('y', innerH - 6).attr('fill','rgba(255,255,255,0.60)').attr('font-size', 10)
+        .text('Imagine only x strongly affects performance. Random search explores more x-values.');
+    }
+
+    function setSearchMode(mode) {
+      searchState.mode = mode;
+      $('#btnGrid').classList.toggle('primary', mode === 'grid');
+      $('#btnRandom').classList.toggle('primary', mode === 'random');
+      renderSearch();
+    }
+    $('#btnGrid').addEventListener('click', () => setSearchMode('grid'));
+    $('#btnRandom').addEventListener('click', () => setSearchMode('random'));
+    setSearchMode('random');
+
+    // =============== Viz 5: Split timeline ===============
+    (function renderSplits(){
+      const { g, innerW, innerH } = baseSvg('#vizSplits');
+      const padX = 10;
+
+      // Timeline area
+      const y0 = 90;
+      const h = 56;
+
+      // Blocks
+      const blocks = [
+        { name: 'Train', x0: 0.06, x1: 0.62, col: 'rgba(6,182,212,0.55)', edge: 'rgba(6,182,212,0.90)', tip: 'Fit preprocessing + model here.' },
+        { name: 'Validation', x0: 0.62, x1: 0.80, col: 'rgba(245,158,11,0.45)', edge: 'rgba(245,158,11,0.90)', tip: 'Tune and select using only this.' },
+        { name: 'Test', x0: 0.80, x1: 0.95, col: 'rgba(124,58,237,0.42)', edge: 'rgba(124,58,237,0.90)', tip: 'Final evaluation only. Do not tune.' }
+      ];
+
+      g.append('text').attr('x', 6).attr('y', 12).attr('fill','rgba(255,255,255,0.78)').attr('font-size', 11).attr('font-weight', 700)
+        .text('Time-based split example');
+      g.append('text').attr('x', 6).attr('y', 28).attr('fill','rgba(255,255,255,0.62)').attr('font-size', 11)
+        .text('Training uses earlier data; validation/test use later data.');
+
+      const x = d3.scaleLinear().domain([0,1]).range([padX, innerW - padX]);
+
+      // Baseline
+      g.append('rect')
+        .attr('x', padX)
+        .attr('y', y0)
+        .attr('width', innerW - 2*padX)
+        .attr('height', h)
+        .attr('rx', 16)
+        .attr('fill','rgba(255,255,255,0.05)')
+        .attr('stroke','rgba(255,255,255,0.12)');
+
+      // Blocks
+      const gb = g.append('g');
+      gb.selectAll('rect')
+        .data(blocks)
+        .enter()
+        .append('rect')
+        .attr('x', d=>x(d.x0))
+        .attr('y', y0)
+        .attr('width', d=>x(d.x1) - x(d.x0))
+        .attr('height', h)
+        .attr('rx', 16)
+        .attr('fill', d=>d.col)
+        .attr('stroke', d=>d.edge)
+        .attr('opacity', 0.95)
+        .on('mousemove', (evt, d) => {
+          showTip(`<strong>${d.name}</strong><span class="muted">${d.tip}</span>`, evt.clientX, evt.clientY);
+        })
+        .on('mouseleave', hideTip);
+
+      gb.selectAll('text')
+        .data(blocks)
+        .enter()
+        .append('text')
+        .attr('x', d => x(d.x0) + 12)
+        .attr('y', y0 + 34)
+        .attr('fill', 'rgba(255,255,255,0.92)')
+        .attr('font-size', 12)
+        .attr('font-weight', 800)
+        .text(d=>d.name);
+
+      // Arrow for time
+      g.append('line')
+        .attr('x1', padX)
+        .attr('x2', innerW - padX)
+        .attr('y1', y0 + h + 38)
+        .attr('y2', y0 + h + 38)
+        .attr('stroke','rgba(255,255,255,0.18)')
+        .attr('stroke-width', 2)
+        .attr('stroke-linecap','round');
+      g.append('path')
+        .attr('d', `M ${innerW - padX} ${y0 + h + 38} l -10 -6 l 0 12 z`)
+        .attr('fill','rgba(255,255,255,0.18)');
+      g.append('text')
+        .attr('x', innerW - padX)
+        .attr('y', y0 + h + 30)
+        .attr('text-anchor','end')
+        .attr('fill','rgba(255,255,255,0.62)')
+        .attr('font-size', 11)
+        .text('time →');
+
+      // Warning label
+      g.append('text')
+        .attr('x', 6)
+        .attr('y', innerH - 8)
+        .attr('fill','rgba(239,68,68,0.74)')
+        .attr('font-size', 10)
+        .attr('font-weight', 700)
+        .text('Never train on data that occurs after the prediction time.');
+    })();
+
+    // =============== Viz 6: Pipeline artifact diagram ===============
+    (function renderArtifact(){
+      const svg = d3.select('#vizArtifact');
+      svg.selectAll('*').remove();
+
+      const g = svg.append('g').attr('transform','translate(20,24)');
+
+      const blocks = [
+        { x: 0,   y: 70, w: 140, h: 86, title: 'Preprocessing', sub: 'Impute · Encode · Scale', col: 'rgba(6,182,212,0.24)', edge: 'rgba(6,182,212,0.65)' },
+        { x: 170, y: 70, w: 140, h: 86, title: 'Model', sub: 'Algorithm + params', col: 'rgba(124,58,237,0.22)', edge: 'rgba(124,58,237,0.65)' },
+        { x: 340, y: 70, w: 140, h: 86, title: 'Output', sub: 'Prediction + score', col: 'rgba(34,197,94,0.20)', edge: 'rgba(34,197,94,0.65)' }
+      ];
+
+      // Package container
+      g.append('rect')
+        .attr('x', -8)
+        .attr('y', 44)
+        .attr('width', 500)
+        .attr('height', 140)
+        .attr('rx', 22)
+        .attr('fill', 'rgba(255,255,255,0.04)')
+        .attr('stroke', 'rgba(255,255,255,0.14)');
+
+      g.append('text')
+        .attr('x', 8)
+        .attr('y', 22)
+        .attr('fill','rgba(255,255,255,0.80)')
+        .attr('font-size', 11)
+        .attr('font-weight', 800)
+        .text('One deployable artifact');
+
+      g.append('text')
+        .attr('x', 8)
+        .attr('y', 38)
+        .attr('fill','rgba(255,255,255,0.62)')
+        .attr('font-size', 11)
+        .text('Save the whole chain so training and inference behave the same.');
+
+      // Blocks
+      const gb = g.append('g');
+      const b = gb.selectAll('g.block').data(blocks).enter().append('g').attr('class','block')
+        .attr('transform', d => `translate(${d.x},${d.y})`)
+        .style('cursor','default');
+
+      b.append('rect')
+        .attr('width', d=>d.w)
+        .attr('height', d=>d.h)
+        .attr('rx', 18)
+        .attr('fill', d=>d.col)
+        .attr('stroke', d=>d.edge)
+        .attr('opacity', 0.95);
+
+      b.append('text')
+        .attr('x', 16)
+        .attr('y', 30)
+        .attr('fill','rgba(255,255,255,0.92)')
+        .attr('font-size', 13)
+        .attr('font-weight', 900)
+        .text(d=>d.title);
+
+      b.append('text')
+        .attr('x', 16)
+        .attr('y', 52)
+        .attr('fill','rgba(255,255,255,0.72)')
+        .attr('font-size', 11)
+        .text(d=>d.sub);
+
+      // Arrows
+      const arrow = (x1,y1,x2,y2) => {
+        g.append('path')
+          .attr('d', `M ${x1} ${y1} L ${x2} ${y2}`)
+          .attr('stroke','rgba(255,255,255,0.18)')
+          .attr('stroke-width', 2.2)
+          .attr('stroke-linecap','round');
+        g.append('path')
+          .attr('d', `M ${x2} ${y2} l -10 -6 l 0 12 z`)
+          .attr('fill','rgba(255,255,255,0.18)');
+      };
+      arrow(140, 113, 170, 113);
+      arrow(310, 113, 340, 113);
+
+      // Hover info
+      b.on('mousemove', (evt, d) => {
+        const details = {
+          'Preprocessing': 'Fit on training data only. Save fitted parameters (means, encoders, vocabularies).',
+          'Model': 'Train with the chosen hyperparameters. Track version + random seed.',
+          'Output': 'Expose prediction + confidence/probability, and log inputs for monitoring.'
+        };
+        showTip(`<strong>${d.title}</strong><span class="muted">${details[d.title]}</span>`, evt.clientX, evt.clientY);
+      }).on('mouseleave', hideTip);
+
+      // Small "seal" icon
+      const seal = g.append('g').attr('transform','translate(452,18)');
+      seal.append('circle').attr('r', 10).attr('cx', 0).attr('cy', 0).attr('fill','rgba(245,158,11,0.45)').attr('stroke','rgba(245,158,11,0.85)');
+      seal.append('path').attr('d','M -4 0 L -1 3 L 5 -3').attr('fill','none').attr('stroke','rgba(255,255,255,0.82)').attr('stroke-width', 2).attr('stroke-linecap','round').attr('stroke-linejoin','round');
+    })();
+
+    // =============== Viz 7: Confusion matrix with threshold ===============
+    const cmState = { threshold: 0.5 };
+
+    // Synthetic scores for a binary classifier
+    const cmData = (() => {
+      const rng = d3.randomLcg(0.33);
+      const n = 360;
+      const scores = [];
+      const posScore = d3.randomNormal.source(rng)(0.68, 0.16);
+      const negScore = d3.randomNormal.source(rng)(0.34, 0.18);
+      for (let i=0;i<n;i++) {
+        const yTrue = i < n*0.42 ? 1 : 0;
+        let s = yTrue ? posScore() : negScore();
+        s = Math.max(0, Math.min(1, s));
+        scores.push({ yTrue, score: s });
+      }
+      return scores;
+    })();
+
+    function computeCM(thr) {
+      let tp=0, fp=0, tn=0, fn=0;
+      for (const d of cmData) {
+        const yPred = d.score >= thr ? 1 : 0;
+        if (d.yTrue===1 && yPred===1) tp++;
+        if (d.yTrue===0 && yPred===1) fp++;
+        if (d.yTrue===0 && yPred===0) tn++;
+        if (d.yTrue===1 && yPred===0) fn++;
+      }
+      const precision = tp / Math.max(1, tp+fp);
+      const recall = tp / Math.max(1, tp+fn);
+      const f1 = (2*precision*recall) / Math.max(1e-9, precision+recall);
+      return { tp, fp, tn, fn, precision, recall, f1 };
+    }
+
+    function renderConfusion(){
+      const svg = d3.select('#vizConfusion');
+      svg.selectAll('*').remove();
+      const g = svg.append('g').attr('transform','translate(18,18)');
+      const w = 520-36, h = 240-36;
+
+      const cm = computeCM(cmState.threshold);
+
+      // Matrix box
+      const cellW = 160, cellH = 80;
+      const x0 = 12, y0 = 56;
+
+      // Labels
+      g.append('text').attr('x', 0).attr('y', 14)
+        .attr('fill','rgba(255,255,255,0.78)').attr('font-size', 11).attr('font-weight', 800)
+        .text(`Threshold = ${fmt(cmState.threshold)} · Precision = ${fmt(cm.precision)} · Recall = ${fmt(cm.recall)} · F1 = ${fmt(cm.f1)}`);
+
+      g.append('text').attr('x', x0).attr('y', y0 - 18).attr('fill','rgba(255,255,255,0.62)').attr('font-size', 11)
+        .text('Predicted');
+      g.append('text').attr('x', x0 - 10).attr('y', y0 + 28).attr('fill','rgba(255,255,255,0.62)').attr('font-size', 11)
+        .attr('text-anchor','end')
+        .text('True');
+
+      const cells = [
+        { name: 'TP', x: 0, y: 0, v: cm.tp, col: 'rgba(34,197,94,0.30)', edge: 'rgba(34,197,94,0.75)', tip: 'True Positive: correctly predicted positive.' },
+        { name: 'FP', x: 1, y: 0, v: cm.fp, col: 'rgba(245,158,11,0.24)', edge: 'rgba(245,158,11,0.75)', tip: 'False Positive: predicted positive, actually negative.' },
+        { name: 'FN', x: 0, y: 1, v: cm.fn, col: 'rgba(239,68,68,0.20)', edge: 'rgba(239,68,68,0.75)', tip: 'False Negative: predicted negative, actually positive.' },
+        { name: 'TN', x: 1, y: 1, v: cm.tn, col: 'rgba(6,182,212,0.22)', edge: 'rgba(6,182,212,0.75)', tip: 'True Negative: correctly predicted negative.' }
+      ];
+
+      // Column/row headers
+      const headers = [
+        { text: 'Pred 1', x: x0 + cellW*0 + 12, y: y0 - 4 },
+        { text: 'Pred 0', x: x0 + cellW*1 + 12, y: y0 - 4 },
+        { text: 'True 1', x: x0 - 10, y: y0 + cellH*0 + 44, anchor: 'end' },
+        { text: 'True 0', x: x0 - 10, y: y0 + cellH*1 + 44, anchor: 'end' }
+      ];
+      g.selectAll('text.h')
+        .data(headers)
+        .enter()
+        .append('text')
+        .attr('class','h')
+        .attr('x', d=>d.x)
+        .attr('y', d=>d.y)
+        .attr('text-anchor', d=>d.anchor || 'start')
+        .attr('fill','rgba(255,255,255,0.72)')
+        .attr('font-size', 11)
+        .attr('font-weight', 800)
+        .text(d=>d.text);
+
+      // Cells
+      const cg = g.append('g');
+      const maxV = d3.max(cells, d=>d.v);
+      const alpha = d3.scaleLinear().domain([0, maxV]).range([0.18, 0.55]);
+
+      const cell = cg.selectAll('g.cell')
+        .data(cells)
+        .enter()
+        .append('g')
+        .attr('class','cell')
+        .attr('transform', d => `translate(${x0 + d.x*cellW},${y0 + d.y*cellH})`)
+        .style('cursor','default');
+
+      cell.append('rect')
+        .attr('width', cellW - 12)
+        .attr('height', cellH - 12)
+        .attr('rx', 18)
+        .attr('fill', d => d.col)
+        .attr('stroke', d => d.edge)
+        .attr('opacity', d => alpha(d.v));
+
+      cell.append('text')
+        .attr('x', 16)
+        .attr('y', 30)
+        .attr('fill','rgba(255,255,255,0.92)')
+        .attr('font-size', 13)
+        .attr('font-weight', 900)
+        .text(d => d.name);
+
+      cell.append('text')
+        .attr('x', 16)
+        .attr('y', 54)
+        .attr('fill','rgba(255,255,255,0.80)')
+        .attr('font-size', 16)
+        .attr('font-weight', 900)
+        .text(d => d.v);
+
+      cell.on('mousemove', (evt, d) => {
+        showTip(`<strong>${d.name}: ${d.v}</strong><span class="muted">${d.tip}</span>`, evt.clientX, evt.clientY);
+      }).on('mouseleave', hideTip);
+
+      // Mini curve (threshold intuition)
+      const miniX0 = 362, miniY0 = 14;
+      const miniW = 120, miniH = 52;
+
+      const mx = d3.scaleLinear().domain([0,1]).range([miniX0, miniX0 + miniW]);
+      const my = d3.scaleLinear().domain([0,1]).range([miniY0 + miniH, miniY0]);
+
+      // densities (rough) using hist
+      const bins = d3.bin().domain([0,1]).thresholds(18)(cmData.filter(d=>d.yTrue===1).map(d=>d.score));
+      const bins2 = d3.bin().domain([0,1]).thresholds(18)(cmData.filter(d=>d.yTrue===0).map(d=>d.score));
+      const maxBin = Math.max(d3.max(bins, d=>d.length), d3.max(bins2, d=>d.length));
+      const ny = d3.scaleLinear().domain([0,maxBin]).range([miniY0 + miniH, miniY0]);
+
+      // area paths
+      const area = d3.area()
+        .x(d=>mx((d.x0+d.x1)/2))
+        .y0(miniY0 + miniH)
+        .y1(d=>ny(d.length))
+        .curve(d3.curveCatmullRom.alpha(0.8));
+
+      g.append('path').attr('d', area(bins))
+        .attr('fill','rgba(34,197,94,0.24)')
+        .attr('stroke','rgba(34,197,94,0.62)')
+        .attr('stroke-width', 1.5);
+      g.append('path').attr('d', area(bins2))
+        .attr('fill','rgba(6,182,212,0.18)')
+        .attr('stroke','rgba(6,182,212,0.55)')
+        .attr('stroke-width', 1.5);
+
+      // threshold line
+      g.append('line')
+        .attr('x1', mx(cmState.threshold)).attr('x2', mx(cmState.threshold))
+        .attr('y1', miniY0).attr('y2', miniY0 + miniH)
+        .attr('stroke','rgba(245,158,11,0.86)')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray','5 5');
+      g.append('text')
+        .attr('x', miniX0)
+        .attr('y', miniY0 + miniH + 14)
+        .attr('fill','rgba(255,255,255,0.60)')
+        .attr('font-size', 10)
+        .text('Scores (pos vs neg)');
+    }
+
+    renderConfusion();
+    $('#thresh').addEventListener('input', (e) => {
+      cmState.threshold = Number(e.target.value) / 100;
+      renderConfusion();
+    });
+
+    // =============== Small polish: subtle entrance animations ===============
+    if (motionEnabled) {
+      const reveal = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          e.target.animate([
+            { opacity: 0, transform: 'translateY(10px)' },
+            { opacity: 1, transform: 'translateY(0px)' }
+          ], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
+          reveal.unobserve(e.target);
+        });
+      }, { threshold: 0.18 });
+
+      $$('.section-card, .card').forEach(el => reveal.observe(el));
+    }
+
+    // =============== Accessibility: close tooltip on scroll/tap ===============
+    window.addEventListener('scroll', () => { if (tooltip.style.opacity === '1') hideTip(); }, { passive: true });
+    window.addEventListener('touchstart', () => { if (tooltip.style.opacity === '1') hideTip(); }, { passive: true });
+
+    // =============== Guard for D3 missing (offline) ===============
+    // If D3 fails to load, show a helpful message.
+    if (typeof d3 === 'undefined') {
+      document.body.innerHTML = `<div style="max-width:900px;margin:40px auto;padding:18px;font-family:Inter,system-ui;">
+        <h2>Missing dependency: D3</h2>
+        <p>This page uses D3 for charts. If you are offline, either connect to the internet or replace the D3 visualizations with static SVGs.</p>
+        <p><code style="background:#f2f2f2;padding:2px 6px;border-radius:6px;">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/d3@7&quot;&gt;&lt;/script&gt;</code></p>
+      </div>`;
+    }
+  </script>
+</body>
+</html>
